@@ -2,7 +2,7 @@
 
 const axios = require('axios');
 
-const FRAMEIO_BASE = 'https://api.frame.io/v4';
+const FRAMEIO_BASE = 'https://api.frame.io/v2';
 
 function headers() {
   return {

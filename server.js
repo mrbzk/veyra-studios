@@ -100,19 +100,26 @@ app.post('/frameio-webhook', (req, res) => {
 
   console.log('[PRODUCTION] Frame.io webhook received:', event.type);
 
-  if (event.type === 'project.status_updated') {
+  // project.updated fires for all project changes — filter for ready_for_review status
+  if (event.type === 'project.updated' || event.type === 'project.status_updated') {
     const status = event.data?.status || event.resource?.status;
     if (status === 'ready_for_review') {
       productionAgent.handleReadyForReview(event).catch(err => {
         console.error('[PRODUCTION] Unhandled error in handleReadyForReview:', err.message);
       });
     } else {
-      console.log('[PRODUCTION] Frame.io project status update ignored:', status);
+      console.log('[PRODUCTION] Frame.io project update ignored — status:', status);
     }
-  } else if (event.type === 'review_link.approved') {
-    productionAgent.handleApproval(event).catch(err => {
-      console.error('[PRODUCTION] Unhandled error in handleApproval:', err.message);
-    });
+  // asset_label.updated fires when someone clicks Approve on a review link
+  } else if (event.type === 'asset_label.updated' || event.type === 'review_link.approved') {
+    const label = event.data?.label || event.resource?.label;
+    if (!label || label === 'approved') {
+      productionAgent.handleApproval(event).catch(err => {
+        console.error('[PRODUCTION] Unhandled error in handleApproval:', err.message);
+      });
+    } else {
+      console.log('[PRODUCTION] Frame.io asset label ignored — label:', label);
+    }
   } else {
     console.log('[PRODUCTION] Frame.io event type ignored:', event.type);
   }

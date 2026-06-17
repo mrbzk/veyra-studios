@@ -82,9 +82,13 @@ app.post('/notion-webhook', async (req, res) => {
 app.post('/frameio-webhook', (req, res) => {
   const sig = req.headers['x-frameio-signature'] || req.headers['x-signature'];
 
-  if (!verifyFrameioSignature(req.body, sig)) {
-    console.error('[PRODUCTION] Frame.io signature verification failed');
-    return res.status(401).json({ error: 'Webhook signature verification failed' });
+  if (process.env.FRAMEIO_WEBHOOK_SECRET) {
+    if (!verifyFrameioSignature(req.body, sig)) {
+      console.error('[PRODUCTION] Frame.io signature verification failed');
+      return res.status(401).json({ error: 'Webhook signature verification failed' });
+    }
+  } else {
+    console.warn('[PRODUCTION] FRAMEIO_WEBHOOK_SECRET not set — accepting unverified request');
   }
 
   // Return 200 immediately per Frame.io requirements

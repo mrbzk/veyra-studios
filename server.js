@@ -71,6 +71,14 @@ app.post('/notion-webhook', async (req, res) => {
     return;
   }
 
+  // Skip rows created by the Stripe agent — they already have Slack Channel set.
+  // Real form submissions arrive without a Slack Channel (it's not a form field).
+  const slackChannel = page?.properties?.['Slack Channel']?.rich_text?.[0]?.plain_text;
+  if (slackChannel) {
+    console.log('[ONBOARDING] Notion webhook — agent-created row (Slack Channel set), skipping');
+    return;
+  }
+
   console.log('[ONBOARDING] Notion webhook received — new Client DB row');
 
   onboardingAgent.handleFormSubmission(page).catch(err => {

@@ -214,8 +214,12 @@ async function executeTool(name, input) {
 
 async function runAgent(userMessage) {
   const messages = [{ role: 'user', content: userMessage }];
+  let turn = 0;
 
   while (true) {
+    turn++;
+    console.log(`[ONBOARDING] Anthropic API call — turn ${turn}`);
+
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8192,
@@ -224,9 +228,10 @@ async function runAgent(userMessage) {
       messages,
     });
 
+    console.log(`[ONBOARDING] Anthropic responded — stop_reason: ${response.stop_reason}`);
     messages.push({ role: 'assistant', content: response.content });
 
-    if (response.stop_reason === 'end_turn') break;
+    if (response.stop_reason === 'end_turn' || response.stop_reason === 'max_tokens') break;
 
     if (response.stop_reason === 'tool_use') {
       const toolResults = [];

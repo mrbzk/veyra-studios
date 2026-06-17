@@ -173,10 +173,13 @@ async function executeTool(name, input) {
     }
 
     case 'slack_invite_admin': {
-      const result = await slack.inviteAdmin(input.channel_id, input.user_id);
+      const teamIds = (process.env.SLACK_TEAM_MEMBER_IDS || '').split(',').filter(Boolean);
+      const allUserIds = [input.user_id, ...teamIds].join(',');
+      const result = await slack.inviteAdmin(input.channel_id, allUserIds);
       if (!result.ok && result.error !== 'already_in_channel') {
         console.warn(`[ONBOARDING] Admin invite issue: ${result.error}`);
       }
+      console.log(`[ONBOARDING] Team members invited: ${allUserIds}`);
       return JSON.stringify({ ok: result.ok, error: result.error });
     }
 

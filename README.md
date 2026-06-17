@@ -2,6 +2,8 @@
 
 Production-ready Node.js webhook server powering two AI agents for Veyra Studios.
 
+**Live at:** `https://agents.veyrastudios.eu`
+
 ## Architecture
 
 ```
@@ -30,26 +32,15 @@ Both agents use `claude-sonnet-4-6` via the Anthropic API with a tool-use loop.
 
 ---
 
-## Railway Deployment
+## Webhook URLs
 
-1. Push this repo to GitHub.
-
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub repo → select `veyra-agent`.
-
-3. Railway detects Node.js and deploys automatically (~2 minutes). You'll get a URL like:
-   ```
-   https://veyra-agent-production.up.railway.app
-   ```
-
-4. Go to your Railway project → **Variables** → add every variable from `.env.example`.
-
-5. Railway redeploys after each variable change.
-
-6. Verify deployment:
-   ```bash
-   curl https://veyra-agent-production.up.railway.app/health
-   # → { "status": "ok", "agents": ["onboarding", "production"], "timestamp": "..." }
-   ```
+| Endpoint | URL |
+|---|---|
+| Stripe | `https://agents.veyrastudios.eu/stripe-webhook` |
+| Frame.io | `https://agents.veyrastudios.eu/frameio-webhook` |
+| Notion (Zapier) | `https://agents.veyrastudios.eu/notion-webhook` |
+| Storyboard trigger | `https://agents.veyrastudios.eu/notion-storyboard` |
+| Health check | `https://agents.veyrastudios.eu/health` |
 
 ---
 
@@ -73,7 +64,7 @@ Both agents use `claude-sonnet-4-6` via the Anthropic API with a tool-use loop.
    | `channels:write` | **Required for guest invites** |
 
 4. Click **Install to Workspace** → Allow.
-5. Copy the **Bot User OAuth Token** (starts with `xoxb-`) → paste into `.env` as `SLACK_BOT_TOKEN`.
+5. Copy the **Bot User OAuth Token** (starts with `xoxb-`) → paste as `SLACK_BOT_TOKEN` in hPanel.
 6. Get your own Slack user ID: Slack → click your name → Profile → `···` → Copy member ID → paste as `SLACK_ADMIN_USER_ID`.
 7. Create a `#production` channel in Slack and invite the bot: `/invite @Veyra Agent`.
 
@@ -82,10 +73,10 @@ Both agents use `claude-sonnet-4-6` via the Anthropic API with a tool-use loop.
 ## Stripe Webhook Configuration
 
 1. Stripe Dashboard → **Developers** → **Webhooks** → Add endpoint.
-2. URL: `https://[your-railway-url]/stripe-webhook`
+2. URL: `https://agents.veyrastudios.eu/stripe-webhook`
 3. Event: `customer.created`
 4. After creating, click the endpoint → **Reveal signing secret** → copy.
-5. Add to Railway variables: `STRIPE_WEBHOOK_SECRET=whsec_...`
+5. Add to hPanel environment variables: `STRIPE_WEBHOOK_SECRET=whsec_...`
 
 The server only processes `customer.created` events where the customer description or metadata contains `"Veyra 10-Pack"`.
 
@@ -94,16 +85,16 @@ The server only processes `customer.created` events where the customer descripti
 ## Frame.io Webhook Configuration
 
 1. [developer.frame.io](https://developer.frame.io) → Apps → your app → **Webhooks** → Add Webhook.
-2. URL: `https://[your-railway-url]/frameio-webhook`
+2. URL: `https://agents.veyrastudios.eu/frameio-webhook`
 3. Select events: `project.status_updated`, `review_link.approved`
 4. Copy the webhook secret shown after creation.
-5. Add to Railway: `FRAMEIO_WEBHOOK_SECRET=...`
+5. Add to hPanel environment variables: `FRAMEIO_WEBHOOK_SECRET=...`
 
 ---
 
-## Environment Variables (Railway)
+## Environment Variables (hPanel)
 
-Go to your Railway project → **Variables** → add each one:
+Set these in hPanel → **Advanced** → **Node.js** → your app → **Environment variables**:
 
 | Variable | Description |
 |---|---|
@@ -118,58 +109,55 @@ Go to your Railway project → **Variables** → add each one:
 | `NOTION_PROJECT_TRACKER_ID` | `36d8e2ee-ae0c-80f4-9158-fffc22de55e2` |
 | `INTERNAL_SLACK_CHANNEL` | `production` |
 | `ONBOARDING_FORM_URL` | `https://veyrastudios.eu` |
-| `PORT` | `3000` |
 
 ---
 
-## Testing Endpoints (curl)
+## Testing Endpoints
 
 **Health check:**
 ```bash
-curl https://[railway-url]/health
+curl https://agents.veyrastudios.eu/health
 ```
-
-**Stripe test event** (from Stripe Dashboard → Developers → Webhooks → Send test event → customer.created):
-Check Railway logs for `[ONBOARDING]` entries.
 
 **Notion webhook:**
 ```bash
-curl -X POST https://[railway-url]/notion-webhook \
+curl -X POST https://agents.veyrastudios.eu/notion-webhook \
   -H "Content-Type: application/json" \
   -d '{"parent":{"database_id":"36d8e2ee-ae0c-8028-a00b-f15951998479"},"properties":{"Your Name":{"title":[{"plain_text":"Test Client"}]},"Email":{"email":"test@example.com"},"Onboarding Form Submitted":{"checkbox":false}}}'
 ```
 
-**Frame.io webhook (requires valid HMAC signature in `x-frameio-signature` header):**
-```bash
-# Test from Frame.io developer dashboard → Webhooks → Send test event
-```
-
 **Storyboard webhook:**
 ```bash
-curl -X POST https://[railway-url]/notion-storyboard \
+curl -X POST https://agents.veyrastudios.eu/notion-storyboard \
   -H "Content-Type: application/json" \
   -d '{"properties":{"Status":{"select":{"name":"Storyboard Review"}},"Storyboard Sent to Client":{"checkbox":false}}}'
 ```
 
+**Frame.io webhook:** Test from Frame.io developer dashboard → Webhooks → Send test event (requires valid HMAC signature).
+
 ---
 
-## Reading Railway Logs
+## Reading Logs (Hostinger)
 
-Go to your Railway project → **Deployments** → click the active deployment → **View logs**.
+Via SSH:
+```bash
+ssh u123456789@agents.veyrastudios.eu -p 65002
+tail -f ~/logs/nodejs.log
+# or check your app root for veyra-agent.log
+```
 
-Filter by agent:
+Filter by prefix to trace a specific workflow:
 - `[ONBOARDING]` — onboarding agent events
 - `[PRODUCTION]` — production agent events
 - `[SCHEDULER]` — 6-hour cron job events
 
-Each tool call and result is logged. Example:
+Example log output:
 ```
 [ONBOARDING] New customer received: John Smith
 [ONBOARDING] Tool call: slack_create_channel {"name":"client-john-smith"}
 [ONBOARDING] Slack channel ready: #client-john-smith (C123ABC456)
 [ONBOARDING] Tool call: slack_invite_guest {"channel_id":"C123ABC456","email":"john@company.com"}
 [ONBOARDING] Slack guest invite sent to: john@company.com
-[ONBOARDING] Tool call: notion_create_page {...}
 [ONBOARDING] Notion page created: abc-123-def-456
 [ONBOARDING] Frame.io project created: John Smith
 [ONBOARDING] Completed onboarding for: John Smith

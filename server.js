@@ -55,16 +55,35 @@ app.post('/notion-webhook', async (req, res) => {
   // Always return 200 — process async
   res.status(200).json({ received: true });
 
-  const page = req.body;
+  const payload = req.body;
+
+  // Notion automations send a minimal payload — extract the page ID from wherever it lives
+  const pageId = payload?.id || payload?.page_id || payload?.data?.page_id || payload?.data?.id;
+
+  if (!pageId) {
+    console.log('[ONBOARDING] Notion webhook — no page ID in payload, skipping. Keys:', Object.keys(payload || {}).join(', '));
+    return;
+  }
+
+  // Fetch the full page from Notion so we have all properties regardless of payload format
+  let page;
+  try {
+    const notion = require('./utils/notion');
+    page = await notion.getPage(pageId);
+  } catch (err) {
+    console.error('[ONBOARDING] Notion webhook — failed to fetch page:', err.message);
+    return;
+  }
 
   // Only process rows from the Client DB
-  const dbId = page?.parent?.database_id;
-  if (dbId && dbId !== process.env.NOTION_CLIENT_DB_ID) {
+  const dbId = page?.parent?.database_id?.replace(/-/g, '');
+  const clientDbId = (process.env.NOTION_CLIENT_DB_ID || '').replace(/-/g, '');
+  if (clientDbId && dbId && dbId !== clientDbId) {
     console.log('[ONBOARDING] Notion webhook — wrong database, skipping');
     return;
   }
 
-  // Skip if already processed (form already submitted)
+  // Skip if already processed
   const formSubmitted = page?.properties?.['Onboarding Form Submitted']?.checkbox;
   if (formSubmitted === true) {
     console.log('[ONBOARDING] Notion webhook — form already submitted, skipping');

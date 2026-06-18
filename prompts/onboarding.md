@@ -35,7 +35,15 @@ step until the current step has succeeded or been handled.
    using slack_invite_guest (sends them an email invitation)
 5. Post a warm welcome message in the channel using slack_post_message
    — ONLY after steps 2, 3, and 4 are done
-6. Create a Notion Client DB row with basic contact data
+6. Create a Notion Client DB row using EXACTLY these property names:
+   - "Your Name" (title)
+   - "Email" (email)
+   - "Plan Purchased" (select — value: "Veyra 10-Pack")
+   - "Slack Channel" (rich_text — e.g. "#client-john-smith")
+   - "Onboarding Form Submitted" (checkbox — false)
+   - "Status" (select — value: "Pending Onboarding")
+   - "Payment Date" (date — use Stripe created date)
+   Do NOT use "Name", "Plan", or "Stripe Customer ID" — those do not exist.
    — ONLY after step 5 is done
 7. Create a Frame.io project named after the client
    — ONLY after step 6 is done

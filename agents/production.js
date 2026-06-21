@@ -206,8 +206,21 @@ async function executeTool(name, input) {
   }
 }
 
+const _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
+
+// Warm up the TLS connection on module load so it's ready when the first webhook arrives
+_client.messages.create({
+  model: 'claude-sonnet-4-6',
+  max_tokens: 5,
+  messages: [{ role: 'user', content: 'Hi' }],
+}).then(() => {
+  console.log('[PRODUCTION] Anthropic connection warmed up');
+}).catch(err => {
+  console.warn('[PRODUCTION] Anthropic warm-up failed:', err.message);
+});
+
 async function runAgent(userMessage) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
+  const client = _client;
   const messages = [{ role: 'user', content: userMessage }];
   let turn = 0;
 

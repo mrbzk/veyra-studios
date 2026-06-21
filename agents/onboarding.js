@@ -7,7 +7,18 @@ const notion = require('../utils/notion');
 const slack = require('../utils/slack');
 const frameio = require('../utils/frameio');
 
-// client is created per-run in runAgent to avoid stale connection pools
+const _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
+
+// Warm up the TLS connection on module load
+_client.messages.create({
+  model: 'claude-sonnet-4-6',
+  max_tokens: 5,
+  messages: [{ role: 'user', content: 'Hi' }],
+}).then(() => {
+  console.log('[ONBOARDING] Anthropic connection warmed up');
+}).catch(err => {
+  console.warn('[ONBOARDING] Anthropic warm-up failed:', err.message);
+});
 
 const systemPrompt = fs.readFileSync(
   path.join(__dirname, '../prompts/onboarding.md'),
@@ -216,7 +227,7 @@ async function executeTool(name, input) {
 }
 
 async function runAgent(userMessage) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
+  const client = _client;
   const messages = [{ role: 'user', content: userMessage }];
   let turn = 0;
 

@@ -54,23 +54,41 @@ CRITICAL: You must call slack_invite_admin immediately after
 slack_create_channel returns. Do not skip to Frame.io or Notion
 before completing all Slack steps (steps 3, 4, 5).
 
-### Trigger 2 — Notion Client DB new row detected
-When a new row appears in the Client DB (indicating the
-onboarding form has been submitted), you must:
-1. Update the Client DB row:
-   - Onboarding Form Submitted → true
-   - Onboarding Date → today
-   - Status → Active
-2. Create a Project Tracker row for Cycle 1:
-   - Project Name: "[Client Name] — Cycle 1"
-   - Cycle Number: 1
-   - Status: Briefing
-   - Is First Cycle: true
-   - Total Videos: 10
-   - Review Stage: Main Video
-   - Start Date: today
-   - Cycle Type: leave blank until confirmed
-3. Post an internal alert to the #production Slack channel
+### Trigger 2 — Onboarding form submitted (new row WITHOUT Slack Channel)
+When a new Client DB row arrives with NO Slack Channel set, a client
+has submitted their onboarding form. The form creates a new row — it
+does NOT update the existing Stripe row. You must match and merge:
+
+1. Read "Your Name" from the form row you received
+2. Query the Client DB to find the Stripe-created row for this client:
+   - It will have the same "Your Name" AND a "Slack Channel" value set
+   - Use notion_query_database with NOTION_CLIENT_DB_ID to find it
+3. Update the STRIPE row (the one with Slack Channel) using these
+   EXACT property names:
+   - "Onboarding Form Submitted": true (checkbox)
+   - "Onboarding Date": today's date (date)
+   - "Status": "Active" (select)
+4. Create a Project Tracker row using these EXACT property names:
+   - "Name": "[Client Name] — Cycle 1" (title)
+   - "Client Name": relation to the Stripe row page_id
+     Format: {"relation": [{"id": "STRIPE_ROW_PAGE_ID"}]}
+   - "Cycle Number": 1 (number)
+   - "Status": "Briefing" (select)
+   - "Is First Cycle": true (checkbox)
+   - "Total Videos": 10 (number)
+   - "Review Stage": "Main Video" (select)
+   - "Start Date": today (date)
+   - "Main Video Status": "Not Started" (select)
+   - "Hooks Status": "Not Started" (select)
+   NOTION_PROJECT_TRACKER_ID is the database to create this in.
+5. Post an internal alert to the Slack channel from the Stripe row:
+
+🎬 New client brief ready for production
+
+Client: [Client Name]
+Plan: Veyra 10-Pack
+Cycle: 1
+Notion: [Stripe row URL]
 
 ### Trigger 3 — Scheduled follow-up check (every 6 hours)
 Query the Notion Client DB for rows where:

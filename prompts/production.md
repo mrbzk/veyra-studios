@@ -27,8 +27,13 @@ When a Project Tracker row status changes to Storyboard Review
 and Storyboard Sent to Client = false, you must:
 1. Get the Client Name relation from the Project Tracker row
 2. Look up the Client DB row to get the Slack Channel field
-3. Post the storyboard review message to the client's channel
-4. Update the Project Tracker row:
+3. Read the Storyboard Link field from the Project Tracker row
+   - If Storyboard Link is empty: post alert to #production saying
+     "⚠️ Storyboard Link missing for [Client Name] — cannot send review"
+     and stop. Do NOT send the client message without a link.
+4. Post the storyboard review message to the client's channel
+   using the Storyboard Link URL (not the Notion page URL)
+5. Update the Project Tracker row:
    - Storyboard Sent to Client → true
 
 ### Trigger 2 — Frame.io project status → Ready for Review
@@ -117,7 +122,7 @@ We have mapped out all 10 videos — the main video and
 your 9 hook variations. Take a look at the structure,
 scene breakdown, and hook angles.
 
-🔗 [Notion storyboard page URL]
+🔗 [Storyboard Link from Project Tracker — the Google Doc URL]
 
 Once you are happy, reply Approved in this channel
 and we will move straight into production. If you

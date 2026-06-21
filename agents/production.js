@@ -162,7 +162,9 @@ async function executeTool(name, input) {
 
     case 'notion_get_page': {
       const result = await notion.getPage(input.page_id);
-      return JSON.stringify(result);
+      const str = JSON.stringify(result);
+      // Truncate very large responses to avoid bloating context
+      return str.length > 8000 ? str.slice(0, 8000) + '...[truncated]' : str;
     }
 
     case 'slack_create_channel': {
@@ -212,7 +214,8 @@ async function runAgent(userMessage) {
 
   while (true) {
     turn++;
-    console.log(`[PRODUCTION] Anthropic API call — turn ${turn}, system prompt length: ${systemPrompt.length}, tools: ${TOOLS.length}`);
+    const msgSize = JSON.stringify(messages).length;
+    console.log(`[PRODUCTION] Anthropic API call — turn ${turn}, messages size: ${msgSize} chars`);
 
     let response;
     try {
@@ -225,7 +228,7 @@ async function runAgent(userMessage) {
           messages,
         }),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`Anthropic API timed out on turn ${turn} after 10s`)), 10000)
+          setTimeout(() => reject(new Error(`Anthropic API timed out on turn ${turn} after 30s`)), 30000)
         ),
       ]);
     } catch (apiErr) {

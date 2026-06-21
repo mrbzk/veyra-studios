@@ -59,18 +59,21 @@ When a new Client DB row arrives with NO Slack Channel set, a client
 has submitted their onboarding form. The form creates a new row — it
 does NOT update the existing Stripe row. You must match and merge:
 
-1. Read "Your Name" and "Company Name" from the form row you received
-2. Query the Client DB to find the Stripe-created row for this client:
+1. IMMEDIATELY update the form row itself (the page you received):
+   - "Onboarding Form Submitted": true (checkbox)
+   This prevents duplicate webhook runs before any other work begins.
+2. Read "Your Name" and "Company Name" from the form row you received
+3. Query the Client DB to find the Stripe-created row for this client:
    - Filter: "Your Name" equals the form row's "Your Name" AND "Slack Channel" is not empty
    - The Stripe row will NOT have Company Name — that is expected
    - Use notion_query_database with NOTION_CLIENT_DB_ID to find it
    - Note: "Company Name" from the form row is valuable data for briefs — store it but do not use it for matching
-3. Update the STRIPE row (the one with Slack Channel) using these
+4. Update the STRIPE row (the one with Slack Channel) using these
    EXACT property names:
    - "Onboarding Form Submitted": true (checkbox)
    - "Onboarding Date": today's date (date)
    - "Status": "Active" (select)
-4. Create a Project Tracker row using these EXACT property names:
+5. Create a Project Tracker row using these EXACT property names:
    - "Name": "[Client Name] — Cycle 1" (title)
    - "Client Name": relation to the Stripe row page_id
      Format: {"relation": [{"id": "STRIPE_ROW_PAGE_ID"}]}

@@ -274,6 +274,25 @@ app.post('/slack-interactive', async (req, res) => {
   });
 });
 
+// ─── GET /diagnostic ─────────────────────────────────────────────────────────
+app.get('/diagnostic', async (req, res) => {
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const testClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await Promise.race([
+      testClient.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Say OK.' }],
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout after 15s')), 15000)),
+    ]);
+    return res.json({ ok: true, text: response.content[0]?.text, stop_reason: response.stop_reason });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ─── GET /health ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.status(200).json({

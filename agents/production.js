@@ -227,7 +227,7 @@ async function runAgent(userMessage) {
           messages,
         }),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`Anthropic API timed out on turn ${turn} after 45s`)), 45000)
+          setTimeout(() => reject(new Error(`Anthropic API timed out on turn ${turn} after 10s`)), 10000)
         ),
       ]);
     } catch (apiErr) {

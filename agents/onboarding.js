@@ -316,7 +316,7 @@ async function handleFormSubmission(page) {
       `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
       `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
       '',
-      'Follow Trigger 2 in your system prompt. Complete all 3 steps.',
+      'Follow Trigger 2 in your system prompt. Complete all 5 steps.',
     ].join('\n');
 
     await runAgent(userMessage);

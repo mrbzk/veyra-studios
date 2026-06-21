@@ -6,7 +6,7 @@ let _client;
 
 function getClient() {
   if (!_client) {
-    _client = new Client({ auth: process.env.NOTION_API_KEY });
+    _client = new Client({ auth: process.env.NOTION_API_KEY, timeoutMs: 15000 });
   }
   return _client;
 }

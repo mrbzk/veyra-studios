@@ -7,7 +7,7 @@ const notion = require('../utils/notion');
 const slack = require('../utils/slack');
 const frameio = require('../utils/frameio');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// client is created per-run in runAgent to avoid stale connection pools
 
 const systemPrompt = fs.readFileSync(
   path.join(__dirname, '../prompts/onboarding.md'),
@@ -216,6 +216,7 @@ async function executeTool(name, input) {
 }
 
 async function runAgent(userMessage) {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
   const messages = [{ role: 'user', content: userMessage }];
   let turn = 0;
 

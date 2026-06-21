@@ -215,7 +215,33 @@ app.post('/slack-events', async (req, res) => {
   if (!event || event.type !== 'message') return;
   if (event.subtype || event.bot_id) return; // ignore edits, deletions, bot messages
 
-  // Events endpoint now only used for URL verification — approvals handled via /slack-interactive button
+  const text = (event.text || '').toLowerCase().trim();
+  if (!text.includes('approved') && !text.includes('approve')) return;
+
+  // Only act on client channels
+  const channelId = event.channel;
+  let channelName;
+  try {
+    const axios = require('axios');
+    const resp = await axios.get('https://slack.com/api/conversations.info', {
+      params: { channel: channelId },
+      headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
+    });
+    channelName = resp.data?.channel?.name || '';
+  } catch (err) {
+    console.error('[SLACK] Failed to get channel name:', err.message);
+    return;
+  }
+
+  if (!channelName.startsWith('client-')) {
+    console.log(`[SLACK] Ignoring "approved" in non-client channel: #${channelName}`);
+    return;
+  }
+
+  console.log(`[PRODUCTION] Approval detected in #${channelName} — triggering storyboard approval`);
+  productionAgent.handleStoryboardApproval(channelId, channelName).catch(err => {
+    console.error('[PRODUCTION] Unhandled error in handleStoryboardApproval:', err.message);
+  });
 });
 
 // ─── POST /slack-interactive ─────────────────────────────────────────────────

@@ -102,12 +102,13 @@ const TOOLS = [
   },
   {
     name: 'slack_post_message',
-    description: 'Post a message to a Slack channel',
+    description: 'Post a message to a Slack channel. Use blocks for interactive messages with buttons.',
     input_schema: {
       type: 'object',
       properties: {
         channel: { type: 'string', description: 'Channel ID or channel name' },
-        text: { type: 'string', description: 'Message text (supports Slack markdown)' },
+        text: { type: 'string', description: 'Message text (shown in notifications and as fallback)' },
+        blocks: { type: 'string', description: 'Optional JSON string of Slack Block Kit blocks (for buttons, rich layout, etc.)' },
       },
       required: ['channel', 'text'],
     },
@@ -186,7 +187,8 @@ async function executeTool(name, input) {
     }
 
     case 'slack_post_message': {
-      const result = await slack.postMessage(input.channel, input.text);
+      const blocks = input.blocks ? JSON.parse(input.blocks) : undefined;
+      const result = await slack.postMessage(input.channel, input.text, blocks);
       console.log(`[PRODUCTION] Message posted to: ${input.channel}`);
       return JSON.stringify({ ok: result.ok, ts: result.ts });
     }
@@ -349,14 +351,13 @@ async function handleStoryboardReview(page) {
   }
 }
 
-async function handleStoryboardApproval(channelId, channelName) {
-  console.log(`[PRODUCTION] Storyboard approval detected in #${channelName}`);
+async function handleStoryboardApproval(projectTrackerPageId, channelName) {
+  console.log(`[PRODUCTION] Storyboard approval button clicked for page: ${projectTrackerPageId}`);
   try {
     const userMessage = [
-      'A client has replied "Approved" in their Slack channel, approving their storyboard.',
+      'A client clicked the "Approve Storyboard" button in Slack.',
       '',
-      'Slack channel details:',
-      `Channel ID: ${channelId}`,
+      `Project Tracker Page ID: ${projectTrackerPageId}`,
       `Channel name: ${channelName}`,
       '',
       'Environment:',
@@ -365,15 +366,16 @@ async function handleStoryboardApproval(channelId, channelName) {
       `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
       '',
       'Follow Trigger 4 in your system prompt.',
+      `Update the Project Tracker row with page ID: ${projectTrackerPageId}`,
     ].join('\n');
 
     await runAgent(userMessage);
-    console.log(`[PRODUCTION] Completed storyboard approval for #${channelName}`);
+    console.log(`[PRODUCTION] Completed storyboard approval for page: ${projectTrackerPageId}`);
   } catch (err) {
     console.error(`[PRODUCTION] handleStoryboardApproval failed: ${err.message}`);
     await slack.postMessage(
       process.env.INTERNAL_SLACK_CHANNEL || 'production',
-      `🚨 Storyboard approval agent failed for #${channelName}\nError: ${err.message}\nManual update required.`
+      `🚨 Storyboard approval agent failed for page: ${projectTrackerPageId}\nError: ${err.message}\nManual update required.`
     ).catch(() => {});
   }
 }

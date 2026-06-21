@@ -90,12 +90,17 @@ async function inviteGuest(channel_id, email, client_name, channel_name) {
   }
 }
 
-async function postMessage(channel, text) {
-  const response = await axios.post(`${SLACK_BASE}/chat.postMessage`, {
-    channel,
-    text,
-  }, { headers: headers() });
+async function postMessage(channel, text, blocks) {
+  const body = { channel, text };
+  if (blocks) body.blocks = blocks;
+  const response = await axios.post(`${SLACK_BASE}/chat.postMessage`, body, { headers: headers() });
   return response.data;
 }
 
-module.exports = { createChannel, findChannelByName, inviteAdmin, inviteGuest, postMessage };
+async function updateInteractiveMessage(responseUrl, text, blocks) {
+  const body = { replace_original: true, text };
+  if (blocks) body.blocks = blocks;
+  await axios.post(responseUrl, body, { headers: { 'Content-Type': 'application/json' } });
+}
+
+module.exports = { createChannel, findChannelByName, inviteAdmin, inviteGuest, postMessage, updateInteractiveMessage };

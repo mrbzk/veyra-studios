@@ -16,6 +16,7 @@ const app = express();
 app.use('/stripe-webhook', express.raw({ type: '*/*' }));
 app.use('/frameio-webhook', express.raw({ type: '*/*' }));
 app.use('/slack-events', express.raw({ type: '*/*' }));
+app.use('/slack-interactive', express.raw({ type: '*/*' }));
 
 // JSON parsing for all other routes
 app.use(express.json());
@@ -214,31 +215,61 @@ app.post('/slack-events', async (req, res) => {
   if (!event || event.type !== 'message') return;
   if (event.subtype || event.bot_id) return; // ignore edits, deletions, bot messages
 
-  const text = (event.text || '').toLowerCase().trim();
-  if (!text.includes('approved')) return;
+  // Events endpoint now only used for URL verification — approvals handled via /slack-interactive button
+});
 
-  // Only act on client channels (name starts with "client-")
-  const channelId = event.channel;
-  let channelName;
+// ─── POST /slack-interactive ─────────────────────────────────────────────────
+app.post('/slack-interactive', async (req, res) => {
+  const rawBody = req.body.toString();
+
+  // Verify Slack signature
+  const sig = req.headers['x-slack-signature'];
+  const ts = req.headers['x-slack-request-timestamp'];
+  if (!verifySlackSignature(rawBody, sig, ts)) {
+    console.error('[SLACK] Interactive signature verification failed');
+    return res.status(401).json({ error: 'Signature verification failed' });
+  }
+
+  // Slack sends payload as URL-encoded form: payload=<JSON>
+  let payload;
   try {
-    const slackApi = require('axios');
-    const resp = await slackApi.get('https://slack.com/api/conversations.info', {
-      params: { channel: channelId },
-      headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
-    });
-    channelName = resp.data?.channel?.name || '';
-  } catch (err) {
-    console.error('[SLACK] Failed to get channel name:', err.message);
-    return;
+    const params = new URLSearchParams(rawBody);
+    payload = JSON.parse(params.get('payload'));
+  } catch {
+    return res.status(400).json({ error: 'Invalid payload' });
   }
 
-  if (!channelName.startsWith('client-')) {
-    console.log(`[SLACK] Ignoring "approved" in non-client channel: #${channelName}`);
-    return;
+  // Acknowledge immediately — Slack requires a response within 3 seconds
+  res.status(200).send('');
+
+  if (payload.type !== 'block_actions') return;
+
+  const action = payload.actions?.[0];
+  if (!action || action.action_id !== 'approve_storyboard') return;
+
+  const projectTrackerPageId = action.value;
+  const responseUrl = payload.response_url;
+  const channelName = payload.channel?.name || 'unknown';
+  const userName = payload.user?.name || 'the client';
+
+  console.log(`[PRODUCTION] Storyboard approval button clicked in #${channelName} by ${userName}`);
+
+  // Replace the button with a confirmation so it can't be clicked twice
+  if (responseUrl) {
+    const axios = require('axios');
+    axios.post(responseUrl, {
+      replace_original: true,
+      text: `✅ Storyboard approved by ${userName}`,
+      blocks: [
+        {
+          type: 'section',
+          text: { type: 'mrkdwn', text: `✅ *Storyboard approved* by <@${payload.user?.id}> — production starting now.` },
+        },
+      ],
+    }, { headers: { 'Content-Type': 'application/json' } }).catch(() => {});
   }
 
-  console.log(`[PRODUCTION] "Approved" detected in #${channelName} — triggering storyboard approval`);
-  productionAgent.handleStoryboardApproval(channelId, channelName).catch(err => {
+  productionAgent.handleStoryboardApproval(projectTrackerPageId, channelName).catch(err => {
     console.error('[PRODUCTION] Unhandled error in handleStoryboardApproval:', err.message);
   });
 });

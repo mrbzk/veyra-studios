@@ -32,22 +32,25 @@ and Storyboard Sent to Client = false, you must:
      "⚠️ Storyboard Link missing for [Client Name] — cannot send review"
      and stop. Do NOT send the client message without a link.
 4. Post the storyboard review message to the client's channel
-   using the Storyboard Link URL (not the Notion page URL)
+   using the Storyboard Link URL (not the Notion page URL).
+   Send it as a Block Kit message with an approval button.
+   Use slack_post_message with blocks as a JSON string:
+   [
+     {"type":"section","text":{"type":"mrkdwn","text":"<the message text>"}},
+     {"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"✅ Approve Storyboard"},"style":"primary","action_id":"approve_storyboard","value":"<PROJECT_TRACKER_PAGE_ID>"}]}
+   ]
+   The button value MUST be the Project Tracker page ID (not the client name).
 5. Update the Project Tracker row:
    - Storyboard Sent to Client → true
 
-### Trigger 4 — Client replies "Approved" in Slack (storyboard approval)
-When a client posts a message containing "approved" in their Slack channel
-and the matching Project Tracker row is in Storyboard Review status, you must:
-1. Query the Client DB for the row where Slack Channel contains the channel name
-2. Get the related Project Tracker row where Status = "Storyboard Review"
-   and Storyboard Sent to Client = true
-   - If no matching row found, log a warning and stop
-3. Update the Project Tracker row:
+### Trigger 4 — Client clicks "Approve Storyboard" button
+When a client clicks the Approve Storyboard button in Slack, you receive
+the Project Tracker page ID directly. You must:
+1. Update that Project Tracker row using the provided page ID:
    - "Storyboard Approved": true (checkbox)
    - "Storyboard Approved Date": today (date)
    - "Status": "In Production" (select)
-4. Post an internal alert to #production:
+2. Post an internal alert to #production:
 
 ✅ Storyboard approved — [Client Name]
 

@@ -214,15 +214,26 @@ async function runAgent(userMessage) {
 
   while (true) {
     turn++;
-    console.log(`[PRODUCTION] Anthropic API call — turn ${turn}`);
+    console.log(`[PRODUCTION] Anthropic API call — turn ${turn}, system prompt length: ${systemPrompt.length}, tools: ${TOOLS.length}`);
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8192,
-      system: systemPrompt,
-      tools: TOOLS,
-      messages,
-    });
+    let response;
+    try {
+      response = await Promise.race([
+        client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8192,
+          system: systemPrompt,
+          tools: TOOLS,
+          messages,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`Anthropic API timed out on turn ${turn} after 45s`)), 45000)
+        ),
+      ]);
+    } catch (apiErr) {
+      console.error(`[PRODUCTION] Anthropic API error on turn ${turn}:`, apiErr.message);
+      throw apiErr;
+    }
 
     console.log(`[PRODUCTION] Anthropic responded — stop_reason: ${response.stop_reason}`);
     messages.push({ role: 'assistant', content: response.content });

@@ -36,6 +36,24 @@ and Storyboard Sent to Client = false, you must:
 5. Update the Project Tracker row:
    - Storyboard Sent to Client → true
 
+### Trigger 4 — Client replies "Approved" in Slack (storyboard approval)
+When a client posts a message containing "approved" in their Slack channel
+and the matching Project Tracker row is in Storyboard Review status, you must:
+1. Query the Client DB for the row where Slack Channel contains the channel name
+2. Get the related Project Tracker row where Status = "Storyboard Review"
+   and Storyboard Sent to Client = true
+   - If no matching row found, log a warning and stop
+3. Update the Project Tracker row:
+   - "Storyboard Approved": true (checkbox)
+   - "Storyboard Approved Date": today (date)
+   - "Status": "In Production" (select)
+4. Post an internal alert to #production:
+
+✅ Storyboard approved — [Client Name]
+
+Project is now In Production.
+👉 Notion: [Project Tracker page URL]
+
 ### Trigger 2 — Frame.io project status → Ready for Review
 When a Frame.io project status changes to Ready for Review, you must:
 1. Search the Notion Project Tracker for the matching row

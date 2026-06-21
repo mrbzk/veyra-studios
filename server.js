@@ -6,6 +6,7 @@ const express = require('express');
 const cron = require('node-cron');
 const { verifyStripeSignature } = require('./utils/verify-stripe');
 const { verifyFrameioSignature } = require('./utils/verify-frameio');
+const { verifySlackSignature } = require('./utils/verify-slack');
 const onboardingAgent = require('./agents/onboarding');
 const productionAgent = require('./agents/production');
 
@@ -14,6 +15,7 @@ const app = express();
 // Raw body required for signature verification on these routes
 app.use('/stripe-webhook', express.raw({ type: '*/*' }));
 app.use('/frameio-webhook', express.raw({ type: '*/*' }));
+app.use('/slack-events', express.raw({ type: '*/*' }));
 
 // JSON parsing for all other routes
 app.use(express.json());
@@ -179,6 +181,65 @@ app.post('/notion-storyboard', async (req, res) => {
 
   productionAgent.handleStoryboardReview(page).catch(err => {
     console.error('[PRODUCTION] Unhandled error in handleStoryboardReview:', err.message);
+  });
+});
+
+// ─── POST /slack-events ──────────────────────────────────────────────────────
+app.post('/slack-events', async (req, res) => {
+  const rawBody = req.body.toString();
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return res.status(400).json({ error: 'Invalid JSON' });
+  }
+
+  // Slack URL verification challenge (sent when you first save the endpoint)
+  if (payload.type === 'url_verification') {
+    return res.json({ challenge: payload.challenge });
+  }
+
+  // Verify Slack signature
+  const sig = req.headers['x-slack-signature'];
+  const ts = req.headers['x-slack-request-timestamp'];
+  if (!verifySlackSignature(rawBody, sig, ts)) {
+    console.error('[SLACK] Signature verification failed');
+    return res.status(401).json({ error: 'Signature verification failed' });
+  }
+
+  // Acknowledge immediately
+  res.status(200).json({ ok: true });
+
+  const event = payload.event;
+  if (!event || event.type !== 'message') return;
+  if (event.subtype || event.bot_id) return; // ignore edits, deletions, bot messages
+
+  const text = (event.text || '').toLowerCase().trim();
+  if (!text.includes('approved')) return;
+
+  // Only act on client channels (name starts with "client-")
+  const channelId = event.channel;
+  let channelName;
+  try {
+    const slackApi = require('axios');
+    const resp = await slackApi.get('https://slack.com/api/conversations.info', {
+      params: { channel: channelId },
+      headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
+    });
+    channelName = resp.data?.channel?.name || '';
+  } catch (err) {
+    console.error('[SLACK] Failed to get channel name:', err.message);
+    return;
+  }
+
+  if (!channelName.startsWith('client-')) {
+    console.log(`[SLACK] Ignoring "approved" in non-client channel: #${channelName}`);
+    return;
+  }
+
+  console.log(`[PRODUCTION] "Approved" detected in #${channelName} — triggering storyboard approval`);
+  productionAgent.handleStoryboardApproval(channelId, channelName).catch(err => {
+    console.error('[PRODUCTION] Unhandled error in handleStoryboardApproval:', err.message);
   });
 });
 

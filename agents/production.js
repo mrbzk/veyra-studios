@@ -349,4 +349,33 @@ async function handleStoryboardReview(page) {
   }
 }
 
-module.exports = { handleReadyForReview, handleApproval, handleStoryboardReview };
+async function handleStoryboardApproval(channelId, channelName) {
+  console.log(`[PRODUCTION] Storyboard approval detected in #${channelName}`);
+  try {
+    const userMessage = [
+      'A client has replied "Approved" in their Slack channel, approving their storyboard.',
+      '',
+      'Slack channel details:',
+      `Channel ID: ${channelId}`,
+      `Channel name: ${channelName}`,
+      '',
+      'Environment:',
+      `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
+      `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
+      `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
+      '',
+      'Follow Trigger 4 in your system prompt.',
+    ].join('\n');
+
+    await runAgent(userMessage);
+    console.log(`[PRODUCTION] Completed storyboard approval for #${channelName}`);
+  } catch (err) {
+    console.error(`[PRODUCTION] handleStoryboardApproval failed: ${err.message}`);
+    await slack.postMessage(
+      process.env.INTERNAL_SLACK_CHANNEL || 'production',
+      `🚨 Storyboard approval agent failed for #${channelName}\nError: ${err.message}\nManual update required.`
+    ).catch(() => {});
+  }
+}
+
+module.exports = { handleReadyForReview, handleApproval, handleStoryboardReview, handleStoryboardApproval };

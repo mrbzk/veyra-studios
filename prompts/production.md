@@ -34,12 +34,16 @@ and Storyboard Sent to Client = false, you must:
 4. Post the storyboard review message to the client's channel
    using the Storyboard Link URL (not the Notion page URL).
    Send it as a Block Kit message with an approval button.
-   Use slack_post_message with blocks as a JSON string:
-   [
-     {"type":"section","text":{"type":"mrkdwn","text":"<the message text>"}},
-     {"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"✅ Approve Storyboard"},"style":"primary","action_id":"approve_storyboard","value":"<PROJECT_TRACKER_PAGE_ID>"}]}
-   ]
-   The button value MUST be the Project Tracker page ID (not the client name).
+   Use slack_post_message with both text and blocks parameters.
+   The blocks parameter must be a JSON string with two blocks:
+   - block 1: type "section", text type "mrkdwn" containing the message
+   - block 2: type "actions" with one button element:
+       action_id: "approve_storyboard"
+       text plain_text: "Approve Storyboard"
+       style: "primary"
+       value: THE PROJECT TRACKER PAGE ID (the UUID string)
+   IMPORTANT: The button value must be the Project Tracker page ID,
+   not the client name. This is how the server knows which row to update.
 5. Update the Project Tracker row:
    - Storyboard Sent to Client → true
 
@@ -145,7 +149,7 @@ scene breakdown, and hook angles.
 
 🔗 [Storyboard Link from Project Tracker — the Google Doc URL]
 
-Once you are happy, reply Approved in this channel
+Once you are happy, click the Approve button below
 and we will move straight into production. If you
 want any changes, just leave notes on the page and
 we will revise.

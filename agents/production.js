@@ -383,13 +383,14 @@ async function handleStoryboardReview(page) {
   }
 }
 
-async function handleStoryboardApproval(channelId) {
-  console.log(`[PRODUCTION] Storyboard approval received in channel: ${channelId}`);
+async function handleStoryboardApproval(channelId, channelName) {
+  console.log(`[PRODUCTION] Storyboard approval received in channel: ${channelId} (${channelName || 'no name'})`);
   try {
     const userMessage = [
       'A client has replied "Approved" in their Slack channel, approving their storyboard.',
       '',
       `Channel ID: ${channelId}`,
+      `Channel name: ${channelName || '(not resolved — scan rows where Slack Channel is not empty)'}`,
       '',
       'Environment:',
       `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
@@ -397,6 +398,7 @@ async function handleStoryboardApproval(channelId) {
       `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
       '',
       'Follow Trigger 4 in your system prompt.',
+      'When posting the client confirmation, use the Channel ID as the channel.',
     ].join('\n');
 
     await runAgent(userMessage);

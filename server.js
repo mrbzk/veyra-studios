@@ -218,10 +218,27 @@ app.post('/slack-events', async (req, res) => {
   const text = (event.text || '').toLowerCase().trim();
   if (!text.includes('approved') && !text.includes('approve')) return;
 
-  // The bot is only invited to #client-* channels, so any message received here is from a client channel
   const channelId = event.channel;
-  console.log(`[PRODUCTION] Approval detected in channel ${channelId} — triggering storyboard approval`);
-  productionAgent.handleStoryboardApproval(channelId).catch(err => {
+
+  // Resolve channel ID → channel name so the agent can match the Notion row
+  let channelName = '';
+  try {
+    const axios = require('axios');
+    const resp = await axios.get('https://slack.com/api/conversations.info', {
+      params: { channel: channelId },
+      headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
+    });
+    if (resp.data?.ok) {
+      channelName = resp.data.channel?.name || '';
+    } else {
+      console.error(`[SLACK] conversations.info failed: ${resp.data?.error} (need channels:read scope?)`);
+    }
+  } catch (err) {
+    console.error('[SLACK] conversations.info error:', err.message);
+  }
+
+  console.log(`[PRODUCTION] Approval detected in ${channelId} (name: "${channelName}") — triggering storyboard approval`);
+  productionAgent.handleStoryboardApproval(channelId, channelName).catch(err => {
     console.error('[PRODUCTION] Unhandled error in handleStoryboardApproval:', err.message);
   });
 });

@@ -151,11 +151,14 @@ async function executeTool(name, input) {
 
     case 'notion_query_database': {
       const result = await notion.queryDatabase(input.database_id, input.filter, input.start_cursor);
-      return JSON.stringify({
-        results: result.results,
-        has_more: result.has_more,
-        next_cursor: result.next_cursor,
-      });
+      // Slim each row to just id, url, and properties — strip verbose metadata
+      const slim = (result.results || []).map(r => ({
+        id: r.id,
+        url: r.url,
+        properties: r.properties,
+      }));
+      const str = JSON.stringify({ results: slim, has_more: result.has_more, next_cursor: result.next_cursor });
+      return str.length > 12000 ? str.slice(0, 12000) + '...[truncated]' : str;
     }
 
     case 'notion_get_page': {
@@ -230,6 +233,10 @@ async function runAgent(userMessage) {
     console.log(`[PRODUCTION] Anthropic API call — turn ${turn}, messages size: ${msgSize} chars`);
 
     const controller = new AbortController();
+    const startedAt = Date.now();
+    const heartbeat = setInterval(() => {
+      console.log(`[PRODUCTION] …turn ${turn} still waiting (${Math.round((Date.now() - startedAt) / 1000)}s)`);
+    }, 5000);
     const timeoutId = setTimeout(() => {
       console.error(`[PRODUCTION] Aborting turn ${turn} — no response after 30s`);
       controller.abort();
@@ -243,10 +250,12 @@ async function runAgent(userMessage) {
         system: systemPrompt,
         tools: TOOLS,
         messages,
-      }, { signal: controller.signal });
+      }, { signal: controller.signal, maxRetries: 0 });
       clearTimeout(timeoutId);
+      clearInterval(heartbeat);
     } catch (apiErr) {
       clearTimeout(timeoutId);
+      clearInterval(heartbeat);
       console.error(`[PRODUCTION] Anthropic API error on turn ${turn}:`, apiErr.message);
       throw apiErr;
     }

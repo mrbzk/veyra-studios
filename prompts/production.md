@@ -37,8 +37,11 @@ and Storyboard Sent to Client = false, you must:
    - Storyboard Sent to Client → true
 
 ### Trigger 4 — Client replies "Approved" in Slack
-When a client sends a message containing "approved" in their channel, you must:
-1. Query the Client DB for the row where Slack Channel matches the channel name
+When a client sends a message containing "approved" in their channel, you receive
+the Slack channel ID. You must:
+1. Query the Client DB for rows where Slack Channel is not empty, then find the
+   row whose channel matches the channel ID provided (use notion_query_database
+   on NOTION_CLIENT_DB_ID)
 2. Get the related Project Tracker row where Status = "Storyboard Review"
    and Storyboard Sent to Client = true
 3. Update that Project Tracker row:

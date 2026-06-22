@@ -229,21 +229,24 @@ async function runAgent(userMessage) {
     const msgSize = JSON.stringify(messages).length;
     console.log(`[PRODUCTION] Anthropic API call — turn ${turn}, messages size: ${msgSize} chars`);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error(`[PRODUCTION] Aborting turn ${turn} — no response after 30s`);
+      controller.abort();
+    }, 30000);
+
     let response;
     try {
-      response = await Promise.race([
-        client.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4096,
-          system: systemPrompt,
-          tools: TOOLS,
-          messages,
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`Anthropic API timed out on turn ${turn} after 30s`)), 30000)
-        ),
-      ]);
+      response = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: systemPrompt,
+        tools: TOOLS,
+        messages,
+      }, { signal: controller.signal });
+      clearTimeout(timeoutId);
     } catch (apiErr) {
+      clearTimeout(timeoutId);
       console.error(`[PRODUCTION] Anthropic API error on turn ${turn}:`, apiErr.message);
       throw apiErr;
     }

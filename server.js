@@ -206,6 +206,46 @@ app.post('/notion-storyboard', async (req, res) => {
   });
 });
 
+// ─── POST /notion-video-review ───────────────────────────────────────────────
+app.post('/notion-video-review', async (req, res) => {
+  res.status(200).json({ received: true });
+
+  const payload = req.body;
+  const pageId = payload?.id || payload?.page_id || payload?.data?.page_id || payload?.data?.id;
+
+  if (!pageId) {
+    console.log('[PRODUCTION] Video review webhook — no page ID in payload, keys:', Object.keys(payload || {}).join(', '));
+    return;
+  }
+
+  let page;
+  try {
+    const notion = require('./utils/notion');
+    page = await notion.getPage(pageId);
+  } catch (err) {
+    console.error('[PRODUCTION] Video review webhook — failed to fetch page:', err.message);
+    return;
+  }
+
+  const reviewStage = page?.properties?.['Review Stage']?.select?.name;
+  const mainVideoStatus = page?.properties?.['Main Video Status']?.select?.name;
+  const hooksStatus = page?.properties?.['Hooks Status']?.select?.name;
+
+  const isMainVideoReady = reviewStage === 'Main Video' && mainVideoStatus === 'Ready for Review';
+  const isHooksReady = reviewStage === 'Hooks' && hooksStatus === 'Ready for Review';
+
+  if (!isMainVideoReady && !isHooksReady) {
+    console.log(`[PRODUCTION] Video review webhook — not ready for review (stage: "${reviewStage}", main: "${mainVideoStatus}", hooks: "${hooksStatus}"), skipping`);
+    return;
+  }
+
+  console.log(`[PRODUCTION] Video review webhook received — stage: ${reviewStage}`);
+
+  productionAgent.handleVideoReview(page).catch(err => {
+    console.error('[PRODUCTION] Unhandled error in handleVideoReview:', err.message);
+  });
+});
+
 // ─── POST /slack-events ──────────────────────────────────────────────────────
 app.post('/slack-events', async (req, res) => {
   const rawBody = req.body.toString();
@@ -258,9 +298,9 @@ app.post('/slack-events', async (req, res) => {
     console.error('[SLACK] conversations.info error:', err.message);
   }
 
-  console.log(`[PRODUCTION] Approval detected in ${channelId} (name: "${channelName}") — triggering storyboard approval`);
-  productionAgent.handleStoryboardApproval(channelId, channelName).catch(err => {
-    console.error('[PRODUCTION] Unhandled error in handleStoryboardApproval:', err.message);
+  console.log(`[PRODUCTION] Approval detected in ${channelId} (name: "${channelName}") — triggering client approval`);
+  productionAgent.handleClientApproval(channelId, channelName).catch(err => {
+    console.error('[PRODUCTION] Unhandled error in handleClientApproval:', err.message);
   });
 });
 
@@ -315,8 +355,8 @@ app.post('/slack-interactive', async (req, res) => {
     }, { headers: { 'Content-Type': 'application/json' } }).catch(() => {});
   }
 
-  productionAgent.handleStoryboardApproval(projectTrackerPageId, channelName).catch(err => {
-    console.error('[PRODUCTION] Unhandled error in handleStoryboardApproval:', err.message);
+  productionAgent.handleClientApproval(projectTrackerPageId, channelName).catch(err => {
+    console.error('[PRODUCTION] Unhandled error in handleClientApproval:', err.message);
   });
 });
 

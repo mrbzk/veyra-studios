@@ -39,51 +39,82 @@ and Storyboard Sent to Client = false, you must:
 ### Trigger 4 — Client replies "Approved" in Slack
 When a client sends a message containing "approved" in their channel, you receive
 the Slack Channel ID and (when available) the channel name. You must:
+
 1. Query the Client DB using a FILTER on the Slack Channel field — do NOT fetch
    all rows. The channel name you receive may be "client-test-07" while Notion
    stores "#client-test-07", so filter where Slack Channel CONTAINS the channel
    name. If no channel name was provided, only then fall back to scanning rows
    where Slack Channel is not empty. This should return one client row.
-2. Find the related Project Tracker row (filter on Status = "Storyboard Review")
-   whose Client Name relation points to that client, with Storyboard Sent to
-   Client = true.
-3. Update that Project Tracker row:
-   - "Storyboard Approved": true (checkbox)
-   - "Storyboard Approved Date": today (date)
-   - "Status": "In Production" (select)
-4. Post a confirmation message to the client's Slack channel — use the Channel ID
-   you were given as the channel:
+
+2. Find the related Project Tracker row for that client and read the current state
+   to determine what is being approved:
+
+   - If Status = "Storyboard Review" AND Storyboard Sent to Client = true
+     → This is a STORYBOARD approval
+   - If Main Video Status = "In Review"
+     → This is a MAIN VIDEO approval
+   - If Hooks Status = "In Review"
+     → This is a HOOKS approval
+
+3. Process based on what is being approved:
+
+   **Storyboard approval:**
+   - Update Project Tracker: Storyboard Approved → true, Storyboard Approved Date → today, Status → "In Production"
+   - Post to client channel (use Channel ID):
 
 ✅ Thanks [First Name] — your storyboard is approved!
 
 We're moving straight into production now. You'll hear from us
 when your main video is ready for review. 🎬
 
-5. Post an internal alert to #production:
+   - Post to #production:
 
 ✅ Storyboard approved — [Client Name]
 
 Project is now In Production.
 👉 Notion: [Project Tracker page URL]
 
-### Trigger 2 — Frame.io project status → Ready for Review
-When a Frame.io project status changes to Ready for Review, you must:
-1. Search the Notion Project Tracker for the matching row
-   (match on project name or Frame.io link)
-2. Read the Review Stage field to determine which stage this is
-3. Get the Client Name relation → look up Client DB → get Slack Channel
+   **Main video approval (Total Videos = 10 — Veyra 10-Pack):**
+   - Update Project Tracker: Main Video Approved → true, Main Video Approved Date → today,
+     Main Video Status → "Approved", Review Stage → "Hooks", Status → "In Production"
+   - Post to #production:
+
+✅ Main video approved — [Client Name]
+
+Hooks production can now begin.
+👉 Notion: [Project Tracker page URL]
+
+   **Main video approval (Total Videos = 1 — Veyra Brand Video):**
+   - Read "Delivery Drive Link" from Project Tracker — if empty, post alert to #production and stop
+   - Update Project Tracker: Main Video Approved → true, Main Video Approved Date → today,
+     Main Video Status → "Approved", Review Stage → "Complete", Status → "Delivered",
+     Client Approved → true, Delivered Date → today
+   - Post delivery message to client channel (use Channel ID)
+   - Post post-delivery message based on Client Type
+
+   **Hooks approval (Veyra 10-Pack only):**
+   - Read "Delivery Drive Link" from Project Tracker — if empty, post alert to #production and stop
+   - Update Project Tracker: Hooks Approved → true, Hooks Approved Date → today,
+     Hooks Status → "Approved", Review Stage → "Complete", Client Approved → true,
+     Delivered Date → today, Status → "Delivered", Slack Notified → true
+   - Post delivery message to client channel (use Channel ID)
+   - Post post-delivery message based on Client Type
+
+### Trigger 2 — Notion video status → Ready for Review
+When a Project Tracker row's Main Video Status or Hooks Status changes
+to "Ready for Review", you must:
+1. Read Review Stage AND Total Videos from the Project Tracker row
+2. Get the Client Name relation → look up Client DB → get Slack Channel and First Name
+3. Read the appropriate Drive link based on Review Stage:
+   - If Review Stage = Main Video: read "Main Video Drive Link"
+   - If Review Stage = Hooks: read "Hooks Drive Link"
+   - If the link is empty: post alert to #production —
+     "⚠️ [Main Video / Hooks] Drive Link missing for [Client Name] — cannot send review"
+     and stop. Do NOT send the client message without a link.
 4. Post the appropriate review message to the client's Slack channel
-5. Update the correct Notion fields based on Review Stage:
-
-   If Review Stage = Main Video:
-   - Main Video Frame.io Link → project URL
-   - Main Video Status → Frame.io Review
-   - Status → Frame.io Review
-
-   If Review Stage = Hooks:
-   - Hooks Frame.io Link → project URL
-   - Hooks Status → Frame.io Review
-   - Status → Frame.io Review
+5. Update the Project Tracker row:
+   - If Review Stage = Main Video: Main Video Status → "In Review"
+   - If Review Stage = Hooks: Hooks Status → "In Review"
 
 ### Trigger 3 — Frame.io review approved
 When a Frame.io review link is approved, you must:

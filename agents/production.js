@@ -392,11 +392,43 @@ async function handleStoryboardReview(page) {
   }
 }
 
-async function handleStoryboardApproval(channelId, channelName) {
-  console.log(`[PRODUCTION] Storyboard approval received in channel: ${channelId} (${channelName || 'no name'})`);
+async function handleVideoReview(page) {
+  const pageId = page.id || page.page_id || 'unknown';
+  const reviewStage = page?.properties?.['Review Stage']?.select?.name || 'unknown';
+  console.log(`[PRODUCTION] Video review triggered for page: ${pageId} (stage: ${reviewStage})`);
   try {
     const userMessage = [
-      'A client has replied "Approved" in their Slack channel, approving their storyboard.',
+      'A Notion Project Tracker row has a video ready for client review.',
+      '',
+      'Page data:',
+      JSON.stringify(page, null, 2),
+      '',
+      'Environment:',
+      `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
+      `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
+      `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
+      '',
+      'Follow Trigger 2 in your system prompt.',
+      'Read Review Stage and Total Videos first, then post the correct review message.',
+      'If the Drive link field is empty, post an alert to #production and stop.',
+    ].join('\n');
+
+    await runAgent(userMessage);
+    console.log(`[PRODUCTION] Completed video review for page: ${pageId}`);
+  } catch (err) {
+    console.error(`[PRODUCTION] handleVideoReview failed: ${err.message}`);
+    await slack.postMessage(
+      process.env.INTERNAL_SLACK_CHANNEL || 'production',
+      `🚨 Production agent failed on video review\nPage: ${pageId}\nError: ${err.message}\nManual review notification required.`
+    ).catch(() => {});
+  }
+}
+
+async function handleClientApproval(channelId, channelName) {
+  console.log(`[PRODUCTION] Client approval received in channel: ${channelId} (${channelName || 'no name'})`);
+  try {
+    const userMessage = [
+      'A client has replied "Approved" in their Slack channel.',
       '',
       `Channel ID: ${channelId}`,
       `Channel name: ${channelName || '(not resolved — scan rows where Slack Channel is not empty)'}`,
@@ -407,18 +439,19 @@ async function handleStoryboardApproval(channelId, channelName) {
       `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
       '',
       'Follow Trigger 4 in your system prompt.',
+      'Read the client\'s current Project Tracker state to determine what is being approved.',
       'When posting the client confirmation, use the Channel ID as the channel.',
     ].join('\n');
 
     await runAgent(userMessage);
-    console.log(`[PRODUCTION] Completed storyboard approval for channel: ${channelId}`);
+    console.log(`[PRODUCTION] Completed client approval for channel: ${channelId}`);
   } catch (err) {
-    console.error(`[PRODUCTION] handleStoryboardApproval failed: ${err.message}`);
+    console.error(`[PRODUCTION] handleClientApproval failed: ${err.message}`);
     await slack.postMessage(
       process.env.INTERNAL_SLACK_CHANNEL || 'production',
-      `🚨 Storyboard approval agent failed for channel: ${channelId}\nError: ${err.message}\nManual update required.`
+      `🚨 Client approval agent failed for channel: ${channelId}\nError: ${err.message}\nManual update required.`
     ).catch(() => {});
   }
 }
 
-module.exports = { handleReadyForReview, handleApproval, handleStoryboardReview, handleStoryboardApproval };
+module.exports = { handleReadyForReview, handleApproval, handleStoryboardReview, handleVideoReview, handleClientApproval };

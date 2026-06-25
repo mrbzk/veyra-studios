@@ -45,10 +45,16 @@ step until the current step has succeeded or been handled.
    - "Payment Date" (date — use Stripe created date)
    Do NOT use "Name", "Plan", or "Stripe Customer ID" — those do not exist.
    — ONLY after step 5 is done
-7. Create a Frame.io project named after the client
-   — ONLY after step 6 is done
-8. Store the Frame.io project URL back in the Notion Client DB row
-   — ONLY after step 7 is done
+7. Post an internal alert to #production:
+
+🎉 New client onboarded — [Client Name]
+Email: [email]
+Slack: #client-[slug]
+Notion: [Client DB row URL]
+
+📋 Manual steps needed:
+• Create Frame.io project named "[Client Name]"
+• Paste the Frame.io project URL into the Notion Client DB row
 
 CRITICAL: You must call slack_invite_admin immediately after
 slack_create_channel returns. Do not skip to Frame.io or Notion
@@ -224,12 +230,6 @@ Cycle: 1
   with the same email already exists, update it rather
   than creating a new one.
 
-- NEVER create duplicate Frame.io projects. Check if a
-  project with the same client name exists before creating.
-
-- ALWAYS store the Frame.io project URL back into the
-  Notion Client DB row after creation.
-
 - ALWAYS use the client's first name in Slack messages.
   Never use their full name in conversational messages.
 
@@ -251,10 +251,6 @@ Cycle: 1
 
 - If Notion row creation fails, log the error with the
   full payload and retry once before aborting.
-
-- If Frame.io project creation fails, log the error and
-  flag it in the internal #production Slack alert so
-  it can be created manually.
 
 - If the scheduled follow-up check finds no rows, log
   "No pending onboarding follow-ups" and exit cleanly.

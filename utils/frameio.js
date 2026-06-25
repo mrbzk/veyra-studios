@@ -19,13 +19,20 @@ async function createProject(name, team_id) {
     return response.data;
   }
 
-  // Discover account ID via /me — works for all token types including Adobe-integrated
+  const accountId = process.env.FRAMEIO_ACCOUNT_ID;
+
+  if (accountId) {
+    const response = await axios.post(`${FRAMEIO_BASE}/accounts/${accountId}/projects`, { name }, { headers: headers() });
+    console.log(`[FRAMEIO] Project created via /accounts endpoint`);
+    return response.data;
+  }
+
+  // Discover account ID via /me — fallback when FRAMEIO_ACCOUNT_ID not set
   const meResponse = await axios.get(`${FRAMEIO_BASE}/me`, { headers: headers() });
   const me = meResponse.data;
   console.log(`[FRAMEIO] /me: account_id=${me.account_id}, from_adobe=${me.from_adobe}`);
 
   if (me.account_id) {
-    // Adobe-integrated accounts: create project directly under account
     try {
       const res = await axios.post(`${FRAMEIO_BASE}/accounts/${me.account_id}/projects`, { name }, { headers: headers() });
       console.log(`[FRAMEIO] Project created via /accounts endpoint`);
@@ -34,7 +41,6 @@ async function createProject(name, team_id) {
       console.warn(`[FRAMEIO] /accounts/${me.account_id}/projects failed: ${e.response?.status} ${e.message}`);
     }
 
-    // Try account-scoped teams
     try {
       const teamsRes = await axios.get(`${FRAMEIO_BASE}/accounts/${me.account_id}/teams`, { headers: headers() });
       const teams = teamsRes.data?.data || teamsRes.data || [];
@@ -48,7 +54,6 @@ async function createProject(name, team_id) {
     }
   }
 
-  // Final fallback
   const response = await axios.post(`${FRAMEIO_BASE}/projects`, { name }, { headers: headers() });
   return response.data;
 }

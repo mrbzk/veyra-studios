@@ -5,7 +5,6 @@ const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
 const notion = require('../utils/notion');
 const slack = require('../utils/slack');
-const frameio = require('../utils/frameio');
 
 const _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
 
@@ -123,29 +122,6 @@ const TOOLS = [
       required: ['channel', 'text'],
     },
   },
-  {
-    name: 'frameio_create_project',
-    description: 'Create a new Frame.io project',
-    input_schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', description: 'Project name' },
-        team_id: { type: 'string', description: 'Frame.io team ID (optional — auto-detected if omitted)' },
-      },
-      required: ['name'],
-    },
-  },
-  {
-    name: 'frameio_get_project',
-    description: 'Get a Frame.io project by ID',
-    input_schema: {
-      type: 'object',
-      properties: {
-        project_id: { type: 'string', description: 'Frame.io project ID' },
-      },
-      required: ['project_id'],
-    },
-  },
 ];
 
 async function executeTool(name, input) {
@@ -208,17 +184,6 @@ async function executeTool(name, input) {
     case 'slack_post_message': {
       const result = await slack.postMessage(input.channel, input.text);
       return JSON.stringify({ ok: result.ok, ts: result.ts });
-    }
-
-    case 'frameio_create_project': {
-      const result = await frameio.createProject(input.name, input.team_id);
-      console.log(`[ONBOARDING] Frame.io project created: ${input.name}`);
-      return JSON.stringify(result);
-    }
-
-    case 'frameio_get_project': {
-      const result = await frameio.getProject(input.project_id);
-      return JSON.stringify(result);
     }
 
     default:

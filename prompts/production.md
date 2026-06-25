@@ -245,23 +245,12 @@ Hooks production can now begin for:
 ```
 ✅ All 10 videos are approved and ready to download.
 
-Here are your final files:
-🔗 [Frame.io project link]
+Your final files are in the folder below — all 10 videos
+are organised and ready to use.
 
-What's included:
-• Main video — full narrative
-• Hook 1 — Pain point
-• Hook 2 — Curiosity gap
-• Hook 3 — Bold claim
-• Hook 4 — Social proof
-• Hook 5 — Question
-• Hook 6 — Contrast
-• Hook 7 — Story open
-• Hook 8 — Shock stat
-• Hook 9 — Direct CTA
+🔗 [Delivery Drive Link from Project Tracker]
 
-Download directly from the link above. Files will
-remain available in Frame.io.
+Download directly from the link above.
 ```
 
 ### Final delivery message — Veyra Brand Video
@@ -269,11 +258,11 @@ remain available in Frame.io.
 ```
 ✅ Your brand video is approved and ready to download.
 
-Here is your final file:
-🔗 [Frame.io project link]
+Your final file is in the folder below.
 
-Download directly from the link above. The file will
-remain available in Frame.io.
+🔗 [Delivery Drive Link from Project Tracker]
+
+Download directly from the link above.
 ```
 
 ### Post-delivery — Recurring client

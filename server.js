@@ -165,6 +165,7 @@ app.post('/notion-storyboard', async (req, res) => {
   res.status(200).json({ received: true });
 
   const page = req.body;
+  console.log('[PRODUCTION] Storyboard webhook payload:', JSON.stringify(page).slice(0, 500));
   const status = page?.properties?.['Status']?.select?.name;
   const storyboardSent = page?.properties?.['Storyboard Sent to Client']?.checkbox;
 

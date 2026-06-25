@@ -100,6 +100,10 @@ When a Frame.io review link is approved, you must:
    Then: post internal production alert (hooks can now begin)
 
    If Review Stage = Main Video AND Total Videos = 1 (Veyra Brand Video):
+   - Read "Delivery Drive Link" from the Project Tracker row
+   - If Delivery Drive Link is empty: post alert to #production —
+     "⚠️ Delivery Drive Link missing for [Client Name] — cannot send delivery"
+     and stop. Do NOT send the client delivery message without a link.
    - Main Video Approved → true
    - Main Video Approved Date → today
    - Main Video Status → Approved
@@ -107,10 +111,14 @@ When a Frame.io review link is approved, you must:
    - Client Approved → true
    - Delivered Date → today
    - Status → Delivered
-   Then: post Brand Video delivery message to client Slack
+   Then: post Brand Video delivery message to client Slack (using Delivery Drive Link)
    Then: post post-delivery message based on Client Type
 
    If Review Stage = Hooks (Veyra 10-Pack only):
+   - Read "Delivery Drive Link" from the Project Tracker row
+   - If Delivery Drive Link is empty: post alert to #production —
+     "⚠️ Delivery Drive Link missing for [Client Name] — cannot send delivery"
+     and stop. Do NOT send the client delivery message without a link.
    - Hooks Approved → true
    - Hooks Approved Date → today
    - Hooks Status → Approved
@@ -118,7 +126,7 @@ When a Frame.io review link is approved, you must:
    - Client Approved → true
    - Delivered Date → today
    - Status → Approved
-   Then: post 10-Pack delivery message to client Slack
+   Then: post 10-Pack delivery message to client Slack (using Delivery Drive Link)
    Then: update Status → Delivered, Slack Notified → true
    Then: post post-delivery message based on Client Type
 

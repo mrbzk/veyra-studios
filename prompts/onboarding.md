@@ -68,9 +68,10 @@ does NOT update the existing Stripe row. You must match and merge:
 1. IMMEDIATELY update the form row itself (the page you received):
    - "Onboarding Form Submitted": true (checkbox)
    This prevents duplicate webhook runs before any other work begins.
-2. Read "Your Name" and "Company Name" from the form row you received
+2. Read "Your Name", "Email", and "Company Name" from the form row you received
 3. Query the Client DB to find the Stripe-created row for this client:
-   - Filter: "Your Name" equals the form row's "Your Name" AND "Slack Channel" is not empty
+   - Primary match: Filter where "Email" equals the form row's "Email" AND "Slack Channel" is not empty
+   - If no email match found, fall back: Filter where "Your Name" equals the form row's "Your Name" AND "Slack Channel" is not empty
    - The Stripe row will NOT have Company Name — that is expected
    - Use notion_query_database with NOTION_CLIENT_DB_ID to find it
    - Note: "Company Name" from the form row is valuable data for briefs — store it but do not use it for matching

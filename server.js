@@ -41,15 +41,17 @@ app.post('/stripe-webhook', async (req, res) => {
   const desc = (customer.description || '').toLowerCase();
   const meta = JSON.stringify(customer.metadata || {}).toLowerCase();
 
-  const isVeyra10Pack = desc.includes('veyra 10-pack') || meta.includes('veyra 10-pack');
-  const isVeyraBrandVideo = desc.includes('veyra brand video') || meta.includes('veyra brand video');
+  const isSpark  = desc.includes('spark')  || meta.includes('spark');
+  const isScale  = desc.includes('scale')  || meta.includes('scale');
+  const isSystem = desc.includes('system') || meta.includes('system');
+  const isStory  = desc.includes('story')  || meta.includes('story');
 
-  if (!isVeyra10Pack && !isVeyraBrandVideo) {
+  if (!isSpark && !isScale && !isSystem && !isStory) {
     console.log('[ONBOARDING] Skipping non-Veyra customer:', customer.email);
     return;
   }
 
-  const plan = isVeyra10Pack ? 'Veyra 10-Pack' : 'Veyra Brand Video';
+  const plan = isSpark ? 'Spark' : isScale ? 'Scale' : isSystem ? 'System' : 'Story';
   console.log('[ONBOARDING] Webhook received — customer.created:', customer.name || customer.email, `(${plan})`);
 
   onboardingAgent.handleNewCustomer(customer, plan).catch(err => {

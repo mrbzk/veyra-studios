@@ -74,25 +74,17 @@ when your main video is ready for review. 🎬
 Project is now In Production.
 👉 Notion: [Project Tracker page URL]
 
-   **Main video approval (Total Videos = 10 — Veyra 10-Pack):**
+   **Main video approval (all plans — Spark, Scale, System, Story):**
    - Update Project Tracker: Main Video Approved → true, Main Video Approved Date → today,
      Main Video Status → "Approved", Review Stage → "Hooks", Status → "In Production"
-   - Post to #production:
+   - Post to #production (use plan-appropriate language for hooks/cuts):
 
-✅ Main video approved — [Client Name]
+✅ Core video(s) approved — [Client Name]
 
-Hooks production can now begin.
+Hooks/cuts production can now begin.
 👉 Notion: [Project Tracker page URL]
 
-   **Main video approval (Total Videos = 1 — Veyra Brand Video):**
-   - Read "Delivery Drive Link" from Project Tracker — if empty, post alert to #production and stop
-   - Update Project Tracker: Main Video Approved → true, Main Video Approved Date → today,
-     Main Video Status → "Approved", Review Stage → "Complete", Status → "Delivered",
-     Client Approved → true, Delivered Date → today
-   - Post delivery message to client channel (use Channel ID)
-   - Post post-delivery message based on Client Type
-
-   **Hooks approval (Veyra 10-Pack only):**
+   **Hooks approval (all plans):**
    - Read "Delivery Drive Link" from Project Tracker — if empty, post alert to #production and stop
    - Update Project Tracker: Hooks Approved → true, Hooks Approved Date → today,
      Hooks Status → "Approved", Review Stage → "Complete", Client Approved → true,
@@ -163,54 +155,56 @@ When a Frame.io review link is approved, you must:
 
 ---
 
+## Plan Reference
+
+Always read Total Videos from the Project Tracker to identify the plan:
+
+| Total Videos | Plan   | Core videos | Hooks/cuts         | Review flow              |
+|-------------|--------|-------------|--------------------|--------------------------|
+| 6           | Spark  | 1           | 5 hooks            | Main Video → Hooks → Complete |
+| 11          | Scale  | 1           | 10 hooks           | Main Video → Hooks → Complete |
+| 22          | System | 2 (parallel)| 10 hooks per video | Main Video → Hooks → Complete |
+| 5           | Story  | 1 brand video | 4 short-form cuts | Main Video → Hooks → Complete |
+
+All plans follow the same two-stage review: Main Video → Hooks → Complete.
+The difference is only the copy in messages and the asset counts in delivery.
+
+For System: "Main Video" = both core videos reviewed in parallel as one package.
+For Story: "Main Video" = brand video. "Hooks" = short-form cuts.
+
 ## Review Stage State Machine
 
-This is the most critical logic in your workflow. Always read
-Review Stage AND Total Videos before taking any action.
+Always read Review Stage AND Total Videos before taking any action.
 
-**Veyra 10-Pack (Total Videos = 10):**
 ```
 Review Stage = Main Video
-  → On approval: advance to Hooks, alert team
+  → On approval: advance Review Stage → Hooks, alert team to upload hooks/cuts
 
 Review Stage = Hooks
-  → On approval: deliver all 10 videos, mark complete
+  → On approval: deliver all assets, mark complete
 
 Review Stage = Complete
   → Cycle fully delivered — log and exit
 ```
 
-**Veyra Brand Video (Total Videos = 1):**
-```
-Review Stage = Main Video
-  → On approval: deliver the video immediately — skip Hooks entirely
-  → Set Review Stage = Complete, Status = Delivered
-
-Review Stage = Complete
-  → Cycle fully delivered — log and exit
-```
-
-NEVER send a delivery message when Review Stage = Main Video
-AND Total Videos = 10.
-NEVER advance to Hooks for Brand Video clients (Total Videos = 1).
-NEVER mark a project Delivered until the correct approval has fired
-for the plan type.
+NEVER send a delivery message when Review Stage = Main Video.
+NEVER mark a project Delivered until Review Stage = Hooks AND hooks/cuts approved.
+NEVER advance to Hooks until Main Video is explicitly approved.
 
 ---
 
 ## Slack Messages
 
-### Storyboard review — Veyra 10-Pack (Total Videos = 10)
+### Storyboard review — Spark (Total Videos = 6)
 ```
 Hi [First Name] 👋
 
 Your storyboard is ready for review.
 
-We have mapped out all 10 videos — the main video and
-your 9 hook variations. Take a look at the structure,
-scene breakdown, and hook angles.
+We have mapped out your core video and 5 hook variations.
+Take a look at the structure, scene breakdown, and hook angles.
 
-🔗 [Storyboard Link from Project Tracker — the Google Doc URL]
+🔗 [Storyboard Link]
 
 Once you are happy, reply Approved in this channel
 and we will move straight into production. If you
@@ -218,16 +212,16 @@ want any changes, just leave notes on the page and
 we will revise.
 ```
 
-### Storyboard review — Veyra Brand Video (Total Videos = 1)
+### Storyboard review — Scale (Total Videos = 11)
 ```
 Hi [First Name] 👋
 
 Your storyboard is ready for review.
 
-We have mapped out your brand video — take a look at the
-structure, scene breakdown, and narrative flow.
+We have mapped out your core video and 10 hook variations.
+Take a look at the structure, scene breakdown, and hook angles.
 
-🔗 [Storyboard Link from Project Tracker — the Google Doc URL]
+🔗 [Storyboard Link]
 
 Once you are happy, reply Approved in this channel
 and we will move straight into production. If you
@@ -235,71 +229,208 @@ want any changes, just leave notes on the page and
 we will revise.
 ```
 
-### Main video review (fires when Frame.io → Ready for Review,
-                        Review Stage = Main Video)
+### Storyboard review — System (Total Videos = 22)
 ```
 Hi [First Name] 👋
 
-Your main video is ready for review.
+Your storyboard is ready for review.
 
-Take a look and leave any timestamped comments directly
-on the video — no account needed to comment.
+We have mapped out both core videos — your awareness and
+retargeting assets — along with 10 hook variations each
+(20 hooks total). Take a look at the structure, scene
+breakdown, and angles for each.
 
-🔗 [Frame.io main video review link]
+🔗 [Storyboard Link]
 
-Once you are happy with the main video we will build
-out all 9 hook variations. Please review within 48 hours.
+Once you are happy, reply Approved in this channel
+and we will move straight into production. If you
+want any changes, just leave notes on the page and
+we will revise.
 ```
 
-### Hooks review (fires when Frame.io → Ready for Review,
-                   Review Stage = Hooks)
+### Storyboard review — Story (Total Videos = 5)
 ```
 Hi [First Name] 👋
 
-Your hook variations are ready for review.
+Your storyboard is ready for review.
 
-All 9 hooks are uploaded — each one opens differently
-but shares the same core. Leave any timestamped comments
-directly on the videos.
+We have mapped out your brand video and the 4 short-form
+cuts. Take a look at the narrative structure, scene
+breakdown, and cut angles.
 
-🔗 [Frame.io hooks review link]
+🔗 [Storyboard Link]
 
-Once approved we will send your final delivery with
-all 10 videos. Please review within 48 hours.
+Once you are happy, reply Approved in this channel
+and we will move straight into production. If you
+want any changes, just leave notes on the page and
+we will revise.
+```
+
+### Main video review — Spark (Total Videos = 6)
+```
+Hi [First Name] 👋
+
+Your core video is ready for review.
+
+Take a look and let us know if you have any feedback.
+
+🔗 [Main Video Drive Link]
+
+Once you are happy we will build out your 5 hook
+variations. Please review within 48 hours.
+```
+
+### Main video review — Scale (Total Videos = 11)
+```
+Hi [First Name] 👋
+
+Your core video is ready for review.
+
+Take a look and let us know if you have any feedback.
+
+🔗 [Main Video Drive Link]
+
+Once you are happy we will build out your 10 hook
+variations. Please review within 48 hours.
+```
+
+### Main video review — System (Total Videos = 22)
+```
+Hi [First Name] 👋
+
+Both core videos are ready for review — your awareness
+and retargeting assets are in the link below.
+
+🔗 [Main Video Drive Link]
+
+Once you are happy with both videos we will build out
+the 20 hook variations. Please review within 48 hours.
+```
+
+### Main video review — Story (Total Videos = 5)
+```
+Hi [First Name] 👋
+
+Your brand video is ready for review.
+
+Take a look and let us know if you have any feedback.
+
+🔗 [Main Video Drive Link]
+
+Once you are happy we will cut your short-form versions.
+Please review within 48 hours.
+```
+
+### Hooks review — Spark (Total Videos = 6)
+```
+Hi [First Name] 👋
+
+Your 5 hook variations are ready for review.
+
+Each one opens differently but shares the same core.
+
+🔗 [Hooks Drive Link]
+
+Once approved we will send your final delivery.
+Please review within 48 hours.
+```
+
+### Hooks review — Scale (Total Videos = 11)
+```
+Hi [First Name] 👋
+
+Your 10 hook variations are ready for review.
+
+Each one opens differently but shares the same core.
+
+🔗 [Hooks Drive Link]
+
+Once approved we will send your final delivery.
+Please review within 48 hours.
+```
+
+### Hooks review — System (Total Videos = 22)
+```
+Hi [First Name] 👋
+
+All 20 hook variations are ready for review — 10 for
+each core video. Everything is in the folder below.
+
+🔗 [Hooks Drive Link]
+
+Once approved we will send your final delivery.
+Please review within 48 hours.
+```
+
+### Hooks review — Story (Total Videos = 5)
+```
+Hi [First Name] 👋
+
+Your short-form cuts are ready for review.
+
+All 4 cuts are in the folder below.
+
+🔗 [Hooks Drive Link]
+
+Once approved we will send your final delivery.
+Please review within 48 hours.
 ```
 
 ### Main video approved — internal alert
 (fires when main video approved, sent to #production)
 ```
-✅ Main video approved — [Client Name]
+✅ Core video(s) approved — [Client Name]
 
-Hooks production can now begin for:
-[Project Name]
+Hooks/cuts production can now begin.
+[Project Name] — [Plan]
 
 👉 Notion: [Project Tracker page URL]
 ```
 
-### Final delivery message — Veyra 10-Pack
-(fires when hooks approved, sent to client Slack)
+### Final delivery message — Spark (6 videos)
 ```
-✅ All 10 videos are approved and ready to download.
+✅ All 6 videos are approved and ready to download.
 
-Your final files are in the folder below — all 10 videos
-are organised and ready to use.
+Your final files are in the folder below — your core
+video and 5 hook variations, ready to use.
 
-🔗 [Delivery Drive Link from Project Tracker]
+🔗 [Delivery Drive Link]
 
 Download directly from the link above.
 ```
 
-### Final delivery message — Veyra Brand Video
-(fires when main video approved, sent to client Slack)
+### Final delivery message — Scale (11 videos)
 ```
-✅ Your brand video is approved and ready to download.
+✅ All 11 videos are approved and ready to download.
 
-Your final file is in the folder below.
+Your final files are in the folder below — your core
+video and 10 hook variations, ready to use.
 
-🔗 [Delivery Drive Link from Project Tracker]
+🔗 [Delivery Drive Link]
+
+Download directly from the link above.
+```
+
+### Final delivery message — System (22 videos)
+```
+✅ All 22 videos are approved and ready to download.
+
+Your final files are in the folder below — both core
+videos and all 20 hook variations, ready to use.
+
+🔗 [Delivery Drive Link]
+
+Download directly from the link above.
+```
+
+### Final delivery message — Story (5 videos)
+```
+✅ Your brand video and short-form cuts are approved
+and ready to download.
+
+Your final files are in the folder below.
+
+🔗 [Delivery Drive Link]
 
 Download directly from the link above.
 ```

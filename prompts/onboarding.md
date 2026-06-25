@@ -38,7 +38,7 @@ step until the current step has succeeded or been handled.
 6. Create a Notion Client DB row using EXACTLY these property names:
    - "Your Name" (title)
    - "Email" (email)
-   - "Plan Purchased" (select — value: use the Plan from the message, e.g. "Veyra 10-Pack" or "Veyra Brand Video")
+   - "Plan Purchased" (select — value: use the Plan from the message: "Spark", "Scale", "System", or "Story")
    - "Slack Channel" (rich_text — e.g. "#client-john-smith")
    - "Onboarding Form Submitted" (checkbox — false)
    - "Status" (select — value: "Pending Onboarding")
@@ -52,10 +52,6 @@ Plan: [Plan]
 Email: [email]
 Slack: #client-[slug]
 Notion: [Client DB row URL]
-
-📋 Manual steps needed:
-• Create Frame.io project named "[Client Name]"
-• Paste the Frame.io project URL into the Notion Client DB row
 
 CRITICAL: You must call slack_invite_admin immediately after
 slack_create_channel returns. Do not skip to Frame.io or Notion
@@ -94,14 +90,13 @@ does NOT update the existing Stripe row. You must match and merge:
    - "Review Stage": "Main Video" (select)
    - "Start Date": today (date)
    - "Main Video Status": "Not Started" (select)
-
-   If Plan = Veyra 10-Pack:
-   - "Total Videos": 10 (number)
    - "Hooks Status": "Not Started" (select)
 
-   If Plan = Veyra Brand Video:
-   - "Total Videos": 1 (number)
-   — Do NOT set Hooks Status for Brand Video
+   Set "Total Videos" based on plan:
+   - Spark:  6  (1 core video + 5 hooks)
+   - Scale:  11 (1 core video + 10 hooks)
+   - System: 22 (2 core videos + 10 hooks each, reviewed in parallel)
+   - Story:  5  (1 brand video + 4 short-form cuts)
 
    NOTION_PROJECT_TRACKER_ID is the database to create this in.
 5. Post a message to the client's Slack channel (from the Stripe row):

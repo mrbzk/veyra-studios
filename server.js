@@ -41,8 +41,11 @@ app.post('/stripe-webhook', async (req, res) => {
   const desc = (customer.description || '').toLowerCase();
   const meta = JSON.stringify(customer.metadata || {}).toLowerCase();
 
-  if (!desc.includes('veyra 10-pack') && !meta.includes('veyra 10-pack')) {
-    console.log('[ONBOARDING] Skipping non-Veyra-10-Pack customer:', customer.email);
+  const isVeyra10Pack = desc.includes('veyra 10-pack') || meta.includes('veyra 10-pack');
+  const isVeyraBrandVideo = desc.includes('veyra brand video') || meta.includes('veyra brand video');
+
+  if (!isVeyra10Pack && !isVeyraBrandVideo) {
+    console.log('[ONBOARDING] Skipping non-Veyra customer:', customer.email);
     return;
   }
 

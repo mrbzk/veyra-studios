@@ -250,8 +250,8 @@ async function runAgent(userMessage) {
   }
 }
 
-async function handleNewCustomer(customer) {
-  console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email}`);
+async function handleNewCustomer(customer, plan = 'Veyra 10-Pack') {
+  console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan})`);
   try {
     const userMessage = [
       'New Stripe customer received. Please process their full onboarding.',
@@ -259,12 +259,14 @@ async function handleNewCustomer(customer) {
       'Customer data:',
       JSON.stringify(customer, null, 2),
       '',
+      `Plan: ${plan}`,
+      '',
       'Environment:',
       `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
       `SLACK_ADMIN_USER_ID: ${process.env.SLACK_ADMIN_USER_ID}`,
       `ONBOARDING_FORM_URL: ${process.env.ONBOARDING_FORM_URL || 'https://veyrastudios.eu'}`,
       '',
-      'Follow Trigger 1 in your system prompt. Complete all 8 steps in order.',
+      'Follow Trigger 1 in your system prompt. Complete all steps in order.',
     ].join('\n');
 
     await runAgent(userMessage);

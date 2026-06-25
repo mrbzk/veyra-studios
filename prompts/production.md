@@ -88,18 +88,29 @@ When a Frame.io project status changes to Ready for Review, you must:
 ### Trigger 3 — Frame.io review approved
 When a Frame.io review link is approved, you must:
 1. Find the matching Notion Project Tracker row
-2. Read the Review Stage field
-3. Update Notion based on Review Stage:
+2. Read Review Stage AND Total Videos
+3. Update Notion based on Review Stage and plan:
 
-   If Review Stage = Main Video:
+   If Review Stage = Main Video AND Total Videos = 10 (Veyra 10-Pack):
    - Main Video Approved → true
    - Main Video Approved Date → today
    - Main Video Status → Approved
    - Review Stage → Hooks
    - Status → In Production
-   Then: post internal production alert
+   Then: post internal production alert (hooks can now begin)
 
-   If Review Stage = Hooks:
+   If Review Stage = Main Video AND Total Videos = 1 (Veyra Brand Video):
+   - Main Video Approved → true
+   - Main Video Approved Date → today
+   - Main Video Status → Approved
+   - Review Stage → Complete
+   - Client Approved → true
+   - Delivered Date → today
+   - Status → Delivered
+   Then: post Brand Video delivery message to client Slack
+   Then: post post-delivery message based on Client Type
+
+   If Review Stage = Hooks (Veyra 10-Pack only):
    - Hooks Approved → true
    - Hooks Approved Date → today
    - Hooks Status → Approved
@@ -107,7 +118,7 @@ When a Frame.io review link is approved, you must:
    - Client Approved → true
    - Delivered Date → today
    - Status → Approved
-   Then: post delivery message to client Slack
+   Then: post 10-Pack delivery message to client Slack
    Then: update Status → Delivered, Slack Notified → true
    Then: post post-delivery message based on Client Type
 
@@ -115,34 +126,42 @@ When a Frame.io review link is approved, you must:
 
 ## Review Stage State Machine
 
-This is the most critical logic in your workflow. Always
-read Review Stage before taking any action on a Frame.io event.
+This is the most critical logic in your workflow. Always read
+Review Stage AND Total Videos before taking any action.
 
+**Veyra 10-Pack (Total Videos = 10):**
 ```
 Review Stage = Main Video
-  → Frame.io event relates to the main video only
   → On approval: advance to Hooks, alert team
 
 Review Stage = Hooks
-  → Frame.io event relates to all 9 hooks
   → On approval: deliver all 10 videos, mark complete
 
 Review Stage = Complete
-  → Cycle is fully delivered
-  → No further Frame.io actions expected
-  → Log and exit if a webhook fires for this row
+  → Cycle fully delivered — log and exit
 ```
 
-NEVER send a full delivery message when Review Stage = Main Video.
-NEVER advance to Hooks until Main Video is explicitly approved.
-NEVER mark a project Delivered until Review Stage = Hooks
-AND Hooks Approved = true.
+**Veyra Brand Video (Total Videos = 1):**
+```
+Review Stage = Main Video
+  → On approval: deliver the video immediately — skip Hooks entirely
+  → Set Review Stage = Complete, Status = Delivered
+
+Review Stage = Complete
+  → Cycle fully delivered — log and exit
+```
+
+NEVER send a delivery message when Review Stage = Main Video
+AND Total Videos = 10.
+NEVER advance to Hooks for Brand Video clients (Total Videos = 1).
+NEVER mark a project Delivered until the correct approval has fired
+for the plan type.
 
 ---
 
 ## Slack Messages
 
-### Storyboard review (fires when status → Storyboard Review)
+### Storyboard review — Veyra 10-Pack (Total Videos = 10)
 ```
 Hi [First Name] 👋
 
@@ -151,6 +170,23 @@ Your storyboard is ready for review.
 We have mapped out all 10 videos — the main video and
 your 9 hook variations. Take a look at the structure,
 scene breakdown, and hook angles.
+
+🔗 [Storyboard Link from Project Tracker — the Google Doc URL]
+
+Once you are happy, reply Approved in this channel
+and we will move straight into production. If you
+want any changes, just leave notes on the page and
+we will revise.
+```
+
+### Storyboard review — Veyra Brand Video (Total Videos = 1)
+```
+Hi [First Name] 👋
+
+Your storyboard is ready for review.
+
+We have mapped out your brand video — take a look at the
+structure, scene breakdown, and narrative flow.
 
 🔗 [Storyboard Link from Project Tracker — the Google Doc URL]
 
@@ -204,7 +240,7 @@ Hooks production can now begin for:
 👉 Notion: [Project Tracker page URL]
 ```
 
-### Final delivery message
+### Final delivery message — Veyra 10-Pack
 (fires when hooks approved, sent to client Slack)
 ```
 ✅ All 10 videos are approved and ready to download.
@@ -225,6 +261,18 @@ What's included:
 • Hook 9 — Direct CTA
 
 Download directly from the link above. Files will
+remain available in Frame.io.
+```
+
+### Final delivery message — Veyra Brand Video
+(fires when main video approved, sent to client Slack)
+```
+✅ Your brand video is approved and ready to download.
+
+Here is your final file:
+🔗 [Frame.io project link]
+
+Download directly from the link above. The file will
 remain available in Frame.io.
 ```
 

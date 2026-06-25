@@ -38,7 +38,7 @@ step until the current step has succeeded or been handled.
 6. Create a Notion Client DB row using EXACTLY these property names:
    - "Your Name" (title)
    - "Email" (email)
-   - "Plan Purchased" (select — value: "Veyra 10-Pack")
+   - "Plan Purchased" (select — value: use the Plan from the message, e.g. "Veyra 10-Pack" or "Veyra Brand Video")
    - "Slack Channel" (rich_text — e.g. "#client-john-smith")
    - "Onboarding Form Submitted" (checkbox — false)
    - "Status" (select — value: "Pending Onboarding")
@@ -48,6 +48,7 @@ step until the current step has succeeded or been handled.
 7. Post an internal alert to #production:
 
 🎉 New client onboarded — [Client Name]
+Plan: [Plan]
 Email: [email]
 Slack: #client-[slug]
 Notion: [Client DB row URL]
@@ -80,18 +81,28 @@ does NOT update the existing Stripe row. You must match and merge:
    - "Onboarding Form Submitted": true (checkbox)
    - "Onboarding Date": today's date (date)
    - "Status": "Active" (select)
-5. Create a Project Tracker row using these EXACT property names:
+5. Create a Project Tracker row. Read "Plan Purchased" from the Stripe
+   row to determine which plan applies, then use these EXACT property names:
+
+   For ALL plans:
    - "Name": "[Client Name] — Cycle 1" (title)
    - "Client Name": relation to the Stripe row page_id
      Format: {"relation": [{"id": "STRIPE_ROW_PAGE_ID"}]}
    - "Cycle Number": 1 (number)
    - "Status": "Briefing" (select)
    - "Is First Cycle": true (checkbox)
-   - "Total Videos": 10 (number)
    - "Review Stage": "Main Video" (select)
    - "Start Date": today (date)
    - "Main Video Status": "Not Started" (select)
+
+   If Plan = Veyra 10-Pack:
+   - "Total Videos": 10 (number)
    - "Hooks Status": "Not Started" (select)
+
+   If Plan = Veyra Brand Video:
+   - "Total Videos": 1 (number)
+   — Do NOT set Hooks Status for Brand Video
+
    NOTION_PROJECT_TRACKER_ID is the database to create this in.
 5. Post a message to the client's Slack channel (from the Stripe row):
 

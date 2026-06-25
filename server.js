@@ -49,9 +49,10 @@ app.post('/stripe-webhook', async (req, res) => {
     return;
   }
 
-  console.log('[ONBOARDING] Webhook received — customer.created:', customer.name || customer.email);
+  const plan = isVeyra10Pack ? 'Veyra 10-Pack' : 'Veyra Brand Video';
+  console.log('[ONBOARDING] Webhook received — customer.created:', customer.name || customer.email, `(${plan})`);
 
-  onboardingAgent.handleNewCustomer(customer).catch(err => {
+  onboardingAgent.handleNewCustomer(customer, plan).catch(err => {
     console.error('[ONBOARDING] Unhandled error in handleNewCustomer:', err.message);
   });
 });

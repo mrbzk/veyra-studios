@@ -164,8 +164,24 @@ app.post('/notion-storyboard', async (req, res) => {
   // Always return 200
   res.status(200).json({ received: true });
 
-  const page = req.body;
-  console.log('[PRODUCTION] Storyboard webhook payload:', JSON.stringify(page).slice(0, 500));
+  const payload = req.body;
+  const pageId = payload?.id || payload?.page_id || payload?.data?.page_id || payload?.data?.id;
+
+  if (!pageId) {
+    console.log('[PRODUCTION] Storyboard webhook — no page ID in payload, keys:', Object.keys(payload || {}).join(', '));
+    return;
+  }
+
+  // Fetch full page so we have all properties regardless of what Notion sends
+  let page;
+  try {
+    const notion = require('./utils/notion');
+    page = await notion.getPage(pageId);
+  } catch (err) {
+    console.error('[PRODUCTION] Storyboard webhook — failed to fetch page:', err.message);
+    return;
+  }
+
   const status = page?.properties?.['Status']?.select?.name;
   const storyboardSent = page?.properties?.['Storyboard Sent to Client']?.checkbox;
 

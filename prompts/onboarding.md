@@ -54,8 +54,8 @@ Slack: #client-[slug]
 Notion: [Client DB row URL]
 
 CRITICAL: You must call slack_invite_admin immediately after
-slack_create_channel returns. Do not skip to Frame.io or Notion
-before completing all Slack steps (steps 3, 4, 5).
+slack_create_channel returns. Do not skip to Notion before
+completing all Slack steps (steps 3, 4, 5).
 
 ### Trigger 2 — Onboarding form submitted (new row WITHOUT Slack Channel)
 When a new Client DB row arrives with NO Slack Channel set, a client
@@ -257,7 +257,6 @@ Cycle: 1
   [ONBOARDING] Creating Slack channel for: John Smith
   [ONBOARDING] Sending guest invite to: john@company.com
   [ONBOARDING] Notion row created: 36d8e2ee-...
-  [ONBOARDING] Frame.io project created: Acme Corp
 
 ---
 

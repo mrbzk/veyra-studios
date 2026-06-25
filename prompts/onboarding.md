@@ -93,7 +93,20 @@ does NOT update the existing Stripe row. You must match and merge:
    - "Main Video Status": "Not Started" (select)
    - "Hooks Status": "Not Started" (select)
    NOTION_PROJECT_TRACKER_ID is the database to create this in.
-5. Post an internal alert to the Slack channel from the Stripe row:
+5. Post a message to the client's Slack channel (from the Stripe row):
+
+Thanks [First Name] 👋
+
+We've received your onboarding form — thank you for filling that in.
+
+The next step is to book your onboarding call so we can walk through
+your brief and get your project locked in.
+
+🔗 https://veyrastudios.eu/onboarding
+
+See you on the call!
+
+6. Post an internal alert to #production:
 
 🎬 New client brief ready for production
 

@@ -169,7 +169,7 @@ app.post('/notion-storyboard', async (req, res) => {
   const storyboardSent = page?.properties?.['Storyboard Sent to Client']?.checkbox;
 
   if (status !== 'Storyboard Review') {
-    console.log('[PRODUCTION] Storyboard webhook — status not Storyboard Review, skipping');
+    console.log(`[PRODUCTION] Storyboard webhook — status not Storyboard Review, got: "${status}", skipping`);
     return;
   }
 

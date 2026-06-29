@@ -21,7 +21,7 @@ feel looked after from the moment they pay.
 You are triggered by two events:
 
 ### Trigger 1 — New Stripe customer (payment confirmed)
-When a new Veyra 10-Pack customer is created in Stripe, you must
+When a new Veyra Studios customer is created in Stripe (Spark, Scale, System, or Story), you must
 complete ALL steps below in STRICT ORDER. Do not move to the next
 step until the current step has succeeded or been handled.
 
@@ -117,7 +117,7 @@ See you on the call!
 🎬 New client brief ready for production
 
 Client: [Client Name]
-Plan: Veyra 10-Pack
+Plan: [Plan]
 Cycle: 1
 Notion: [Stripe row URL]
 
@@ -161,7 +161,7 @@ IMPORTANT RULES:
 ```
 👋 Welcome [First Name]!
 
-Your Veyra 10-Pack is confirmed — thank you for choosing us.
+Your [Plan] package is confirmed — thank you for choosing us.
 
 You have been invited to this channel as your dedicated
 project workspace. All updates, reviews, and final files
@@ -220,7 +220,7 @@ complete.
 If something has come up or you would like to discuss
 your project, please reply here or email us directly.
 We want to make sure you get the most out of your
-Veyra 10-Pack.
+Veyra Studios package.
 ```
 
 ### Internal production alert (fires when form submitted)
@@ -228,7 +228,7 @@ Veyra 10-Pack.
 🎬 New client brief ready for production
 
 Client: [Client Name]
-Plan: Veyra 10-Pack
+Plan: [Plan]
 Platforms: [Platforms from Notion]
 Cycle: 1
 

@@ -157,25 +157,85 @@ IMPORTANT RULES:
 
 ## Slack Messages
 
-### Welcome message (fires after channel created and invite sent)
+### Welcome message — Spark (fires after channel created and invite sent)
 ```
 👋 Welcome [First Name]!
 
-Your [Plan] package is confirmed — thank you for choosing us.
+Your Spark package is confirmed — thank you for choosing us.
 
-You have been invited to this channel as your dedicated
-project workspace. All updates, reviews, and final files
-will be shared here.
+You've been invited to this channel as your dedicated project
+workspace. We'll be producing 1 core video and 5 hook variations
+for you. All updates, reviews, and final files will be shared here.
 
-To kick off your project, please complete your onboarding
-form below. It takes around 10 minutes and gives us
-everything we need to build your videos.
+To kick off your project, please complete your onboarding form
+below. It takes around 10 minutes and gives us everything we
+need to build your videos.
 
 🔗 https://veyrastudios.eu
 
 Once submitted we will confirm your project start date
-within 24 hours. Any questions in the meantime,
-just message here.
+within 24 hours. Any questions in the meantime, just message here.
+```
+
+### Welcome message — Scale (fires after channel created and invite sent)
+```
+👋 Welcome [First Name]!
+
+Your Scale package is confirmed — thank you for choosing us.
+
+You've been invited to this channel as your dedicated project
+workspace. We'll be producing 1 core video and 10 hook variations
+for you. All updates, reviews, and final files will be shared here.
+
+To kick off your project, please complete your onboarding form
+below. It takes around 10 minutes and gives us everything we
+need to build your videos.
+
+🔗 https://veyrastudios.eu
+
+Once submitted we will confirm your project start date
+within 24 hours. Any questions in the meantime, just message here.
+```
+
+### Welcome message — System (fires after channel created and invite sent)
+```
+👋 Welcome [First Name]!
+
+Your System package is confirmed — thank you for choosing us.
+
+You've been invited to this channel as your dedicated project
+workspace. We'll be producing 2 core videos with 10 hook variations
+each — 22 videos in total. All updates, reviews, and final files
+will be shared here.
+
+To kick off your project, please complete your onboarding form
+below. It takes around 10 minutes and gives us everything we
+need to build your videos.
+
+🔗 https://veyrastudios.eu
+
+Once submitted we will confirm your project start date
+within 24 hours. Any questions in the meantime, just message here.
+```
+
+### Welcome message — Story (fires after channel created and invite sent)
+```
+👋 Welcome [First Name]!
+
+Your Story package is confirmed — thank you for choosing us.
+
+You've been invited to this channel as your dedicated project
+workspace. We'll be producing your brand video and 4 short-form
+cuts. All updates, reviews, and final files will be shared here.
+
+To kick off your project, please complete your onboarding form
+below. It takes around 10 minutes and gives us everything we
+need to build your videos.
+
+🔗 https://veyrastudios.eu
+
+Once submitted we will confirm your project start date
+within 24 hours. Any questions in the meantime, just message here.
 ```
 
 ### Day 1 chase (24hrs, form not submitted)

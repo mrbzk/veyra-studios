@@ -263,71 +263,6 @@ async function runAgent(userMessage) {
   }
 }
 
-async function handleReadyForReview(event) {
-  const projectName = event.data?.name || event.resource?.name || 'Unknown project';
-  console.log(`[PRODUCTION] Frame.io ready for review: ${projectName}`);
-  try {
-    const userMessage = [
-      'A Frame.io project status has changed to Ready for Review.',
-      '',
-      'Frame.io event data:',
-      JSON.stringify(event, null, 2),
-      '',
-      'Environment:',
-      `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
-      `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
-      `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
-      '',
-      'Follow Trigger 2 in your system prompt.',
-      'CRITICAL: Read Review Stage from the matching Notion row before taking any action.',
-      'Only update Main Video fields if Review Stage = Main Video.',
-      'Only update Hooks fields if Review Stage = Hooks.',
-    ].join('\n');
-
-    await runAgent(userMessage);
-    console.log(`[PRODUCTION] Completed ready-for-review handling: ${projectName}`);
-  } catch (err) {
-    console.error(`[PRODUCTION] handleReadyForReview failed: ${err.message}`);
-    await slack.postMessage(
-      process.env.INTERNAL_SLACK_CHANNEL || 'production',
-      `🚨 Production agent failed on ready-for-review\nProject: ${projectName}\nError: ${err.message}\nManual review notification required.`
-    ).catch(() => {});
-  }
-}
-
-async function handleApproval(event) {
-  const projectName = event.data?.name || event.resource?.name || 'Unknown project';
-  console.log(`[PRODUCTION] Frame.io approval received: ${projectName}`);
-  try {
-    const userMessage = [
-      'A Frame.io review link has been approved.',
-      '',
-      'Frame.io event data:',
-      JSON.stringify(event, null, 2),
-      '',
-      'Environment:',
-      `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
-      `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
-      `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
-      '',
-      'Follow Trigger 3 in your system prompt.',
-      'CRITICAL: Read Review Stage from the matching Notion row before taking any action.',
-      'CRITICAL: NEVER send a full delivery message unless Review Stage = Hooks AND Hooks Approved = true.',
-      'If Review Stage = Main Video: mark approved, advance to Hooks, post internal alert — do NOT deliver.',
-      'If Review Stage = Hooks: mark approved, deliver all 10 videos, post post-delivery message based on Client Type.',
-    ].join('\n');
-
-    await runAgent(userMessage);
-    console.log(`[PRODUCTION] Completed approval handling: ${projectName}`);
-  } catch (err) {
-    console.error(`[PRODUCTION] handleApproval failed: ${err.message}`);
-    await slack.postMessage(
-      process.env.INTERNAL_SLACK_CHANNEL || 'production',
-      `🚨 Production agent failed on approval\nProject: ${projectName}\nError: ${err.message}\nManual delivery may be required.`
-    ).catch(() => {});
-  }
-}
-
 async function handleStoryboardReview(page) {
   const pageId = page.id || page.page_id || 'unknown';
   console.log(`[PRODUCTION] Storyboard review triggered for page: ${pageId}`);
@@ -420,4 +355,4 @@ async function handleClientApproval(channelId, channelName) {
   }
 }
 
-module.exports = { handleReadyForReview, handleApproval, handleStoryboardReview, handleVideoReview, handleClientApproval };
+module.exports = { handleStoryboardReview, handleVideoReview, handleClientApproval };

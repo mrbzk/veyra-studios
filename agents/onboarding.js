@@ -250,8 +250,9 @@ async function runAgent(userMessage) {
   }
 }
 
-async function handleNewCustomer(customer, plan = 'Veyra 10-Pack') {
-  console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan})`);
+async function handleNewCustomer(customer, plan = 'Veyra 10-Pack', language = 'en') {
+  const languageLabel = language === 'nl' ? 'Nederlands' : 'English';
+  console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan}, ${languageLabel})`);
   try {
     const userMessage = [
       'New Stripe customer received. Please process their full onboarding.',
@@ -260,6 +261,7 @@ async function handleNewCustomer(customer, plan = 'Veyra 10-Pack') {
       JSON.stringify(customer, null, 2),
       '',
       `Plan: ${plan}`,
+      `Language: ${languageLabel}`,
       '',
       'Environment:',
       `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
@@ -350,6 +352,7 @@ async function checkPendingOnboarding() {
       const email = page.properties?.['Email']?.email || '';
       const slackChannel = page.properties?.['Slack Channel']?.rich_text?.[0]?.plain_text || '';
       const paymentDateStr = page.properties?.['Payment Date']?.date?.start;
+      const language = page.properties?.['Language']?.select?.name === 'Nederlands' ? 'nl' : 'en';
 
       if (!paymentDateStr) continue;
 
@@ -381,21 +384,25 @@ async function checkPendingOnboarding() {
       }
 
       const formUrl = process.env.ONBOARDING_FORM_URL || 'https://veyrastudios.eu';
-      let message;
-
-      if (dayBucket === 1) {
-        message = `Hey ${firstName} 👋\n\nJust a quick reminder to complete your onboarding form when you get a moment — it is the last step before we can kick off your project.\n\n🔗 ${formUrl}\n\nTakes about 10 minutes. Looking forward to getting started with you.`;
-      } else if (dayBucket === 3) {
-        message = `Hi ${firstName},\n\nWe noticed your onboarding form is still outstanding. We cannot begin production until it is complete, so whenever you have 10 minutes it would be great to get this done.\n\n🔗 ${formUrl}\n\nIf you have any questions or need help with any of the questions, just reply here and we will help you out.`;
-      } else if (dayBucket === 7) {
-        message = `Hi ${firstName},\n\nThis is our final reminder about your onboarding form. Your project start date is being held until this is complete.\n\n🔗 ${formUrl}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Veyra 10-Pack.`;
-      }
+      const CHASE_MESSAGES = {
+        en: {
+          1: `Hey ${firstName} 👋\n\nJust a quick reminder to complete your onboarding form when you get a moment — it is the last step before we can kick off your project.\n\n🔗 ${formUrl}\n\nTakes about 10 minutes. Looking forward to getting started with you.`,
+          3: `Hi ${firstName},\n\nWe noticed your onboarding form is still outstanding. We cannot begin production until it is complete, so whenever you have 10 minutes it would be great to get this done.\n\n🔗 ${formUrl}\n\nIf you have any questions or need help with any of the questions, just reply here and we will help you out.`,
+          7: `Hi ${firstName},\n\nThis is our final reminder about your onboarding form. Your project start date is being held until this is complete.\n\n🔗 ${formUrl}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Veyra 10-Pack.`,
+        },
+        nl: {
+          1: `Hey ${firstName} 👋\n\nEven een korte herinnering om je onboardingformulier in te vullen wanneer het je uitkomt — het is de laatste stap voor we van start kunnen gaan met je project.\n\n🔗 ${formUrl}\n\nDuurt zo'n 10 minuten. We kijken ernaar uit om met je aan de slag te gaan.`,
+          3: `Hoi ${firstName},\n\nWe zien dat je onboardingformulier nog niet is ingevuld. We kunnen pas starten met de productie zodra dit compleet is, dus als je 10 minuutjes hebt zou het top zijn om dit af te ronden.\n\n🔗 ${formUrl}\n\nHeb je vragen of hulp nodig bij een van de vragen, laat het hier gewoon weten en we helpen je verder.`,
+          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering over je onboardingformulier. De startdatum van je project staat on hold tot dit is afgerond.\n\n🔗 ${formUrl}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je Veyra Studios-pakket haalt.`,
+        },
+      };
+      const message = CHASE_MESSAGES[language][dayBucket];
 
       try {
         await slack.postMessage(slackChannel, message);
         sentChases.add(chaseKey);
         chasedCount++;
-        console.log(`[SCHEDULER] Day ${dayBucket} chase sent to ${name} in #${slackChannel}`);
+        console.log(`[SCHEDULER] Day ${dayBucket} chase sent to ${name} in #${slackChannel} (${language})`);
       } catch (err) {
         console.error(`[SCHEDULER] Failed to send chase to ${name}: ${err.message}`);
       }

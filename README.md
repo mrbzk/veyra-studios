@@ -20,7 +20,7 @@ prompts/production.md   System prompt for the Production Agent
 ```
 
 **Endpoints:**
-- `POST /stripe-webhook` — Stripe customer.created → triggers onboarding
+- `POST /stripe-webhook` — Stripe checkout.session.completed → triggers onboarding
 - `POST /notion-webhook` — Notion Client DB new row → processes form submission
 - `POST /frameio-webhook` — Frame.io project status / review approval → production actions
 - `POST /notion-storyboard` — Notion Project Tracker storyboard trigger
@@ -74,11 +74,38 @@ Both agents use `claude-sonnet-4-6` via the Anthropic API with a tool-use loop.
 
 1. Stripe Dashboard → **Developers** → **Webhooks** → Add endpoint.
 2. URL: `https://agents.veyrastudios.eu/stripe-webhook`
-3. Event: `customer.created`
+3. Event: `checkout.session.completed`
 4. After creating, click the endpoint → **Reveal signing secret** → copy.
 5. Add to hPanel environment variables: `STRIPE_WEBHOOK_SECRET=whsec_...`
 
-The server only processes `customer.created` events where the customer description or metadata contains `"Veyra 10-Pack"`.
+The server processes `checkout.session.completed` events, reading `plan`
+and `language` off the Checkout Session's `metadata` (set on the Payment
+Link — see below). It falls back to keyword-matching the customer name/
+metadata for "spark"/"scale"/"system"/"story" if a link hasn't been
+tagged. `customer.created` events are received but ignored, since
+`checkout.session.completed` already carries everything onboarding needs
+and firing on both would start onboarding twice.
+
+### Tagging Payment Links for plan + language
+
+Each plan needs one Payment Link per language (e.g. "Spark — English",
+"Spark — Nederlands"). Metadata can't be set from the Payment Links
+Dashboard UI — use the Stripe CLI:
+
+```bash
+stripe payment_links update plink_XXXXXXXX \
+  -d "metadata[plan]=spark" \
+  -d "metadata[language]=nl"
+```
+
+Valid `plan` values: `spark`, `scale`, `system`, `story`.
+Valid `language` values: `en`, `nl`. Untagged links, or links missing
+one of these keys, default to English.
+
+Send clients the Payment Link matching their plan and language — the
+agent stores the `Language` property ("English" / "Nederlands") on their
+Client DB row during onboarding, and every later client-facing message
+(reviews, delivery, chase messages) is composed in that language.
 
 ---
 
@@ -187,3 +214,7 @@ To send manually: Slack → workspace → **Members** → Invite people → Sing
 3. Share each database with the integration:
    - Open Client DB in Notion → `···` (top right) → Connections → Veyra Agent
    - Repeat for Project Tracker
+4. Add a **Language** select property to the Client DB, with options
+   **English** and **Nederlands**. The onboarding agent sets this
+   automatically from the Payment Link metadata — it just needs to
+   exist on the database first.

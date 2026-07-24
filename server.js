@@ -33,26 +33,52 @@ app.post('/stripe-webhook', async (req, res) => {
   // Acknowledge immediately
   res.status(200).json({ received: true });
 
-  if (event.type !== 'customer.created') return;
+  // customer.created fires alongside checkout.session.completed for the same
+  // purchase — onboarding is triggered from the Checkout Session instead
+  // (below), since that's the object that actually carries the Payment
+  // Link's plan/language metadata. Ignore customer.created to avoid a
+  // duplicate onboarding run.
+  if (event.type === 'customer.created') {
+    console.log('[ONBOARDING] customer.created received — ignoring (onboarding triggers off checkout.session.completed)');
+    return;
+  }
 
-  const customer = event.data.object;
-  const desc = (customer.description || '').toLowerCase();
-  const meta = JSON.stringify(customer.metadata || {}).toLowerCase();
+  if (event.type !== 'checkout.session.completed') return;
 
-  const isSpark  = desc.includes('spark')  || meta.includes('spark');
-  const isScale  = desc.includes('scale')  || meta.includes('scale');
-  const isSystem = desc.includes('system') || meta.includes('system');
-  const isStory  = desc.includes('story')  || meta.includes('story');
+  const session = event.data.object;
+  const meta = session.metadata || {};
+  const details = session.customer_details || {};
+  const descAndMeta = `${(details.name || '')} ${JSON.stringify(meta)}`.toLowerCase();
+
+  // Prefer the explicit metadata tag set on the Payment Link; fall back to
+  // keyword sniffing for any link that hasn't been tagged yet.
+  const planMeta = (meta.plan || '').toLowerCase();
+  const isSpark  = planMeta === 'spark'  || descAndMeta.includes('spark');
+  const isScale  = planMeta === 'scale'  || descAndMeta.includes('scale');
+  const isSystem = planMeta === 'system' || descAndMeta.includes('system');
+  const isStory  = planMeta === 'story'  || descAndMeta.includes('story');
 
   if (!isSpark && !isScale && !isSystem && !isStory) {
-    console.log('[ONBOARDING] Skipping non-Veyra customer:', customer.email);
+    console.log('[ONBOARDING] Skipping non-Veyra checkout session:', details.email);
     return;
   }
 
   const plan = isSpark ? 'Spark' : isScale ? 'Scale' : isSystem ? 'System' : 'Story';
-  console.log('[ONBOARDING] Webhook received — customer.created:', customer.name || customer.email, `(${plan})`);
+  const language = (meta.language || '').toLowerCase() === 'nl' ? 'nl' : 'en';
 
-  onboardingAgent.handleNewCustomer(customer, plan).catch(err => {
+  console.log('[ONBOARDING] Webhook received — checkout.session.completed:', details.name || details.email, `(${plan}, ${language})`);
+
+  // Reshape into the customer-like object handleNewCustomer expects
+  const customer = {
+    id: session.customer,
+    name: details.name || '',
+    email: details.email || '',
+    created: session.created,
+    description: '',
+    metadata: meta,
+  };
+
+  onboardingAgent.handleNewCustomer(customer, plan, language).catch(err => {
     console.error('[ONBOARDING] Unhandled error in handleNewCustomer:', err.message);
   });
 });

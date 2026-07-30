@@ -34,12 +34,35 @@ app.post('/stripe-webhook', async (req, res) => {
   res.status(200).json({ received: true });
 
   // customer.created fires alongside checkout.session.completed for the same
-  // purchase — onboarding is triggered from the Checkout Session instead
+  // purchase — real onboarding triggers off the Checkout Session instead
   // (below), since that's the object that actually carries the Payment
-  // Link's plan/language metadata. Ignore customer.created to avoid a
-  // duplicate onboarding run.
+  // Link's plan/language metadata. The one exception is a manually-created
+  // test customer (via Dashboard "+ Add customer", using the legacy Veyra
+  // 10-Pack product) — that has no Checkout Session at all, so this is the
+  // only manual test lane: type plan/language keywords straight into the
+  // customer's description (e.g. "Veyra 10-Pack EN" or "Veyra 10-Pack NL").
+  // Real customers from the 4 live plans never match "10-pack"/"test", so
+  // this can't double-fire onboarding for them.
   if (event.type === 'customer.created') {
-    console.log('[ONBOARDING] customer.created received — ignoring (onboarding triggers off checkout.session.completed)');
+    const customer = event.data.object;
+    const text = `${(customer.description || '')} ${JSON.stringify(customer.metadata || {})}`.toLowerCase();
+
+    if (!text.includes('10-pack') && !text.includes('10 pack') && !text.includes('test')) {
+      console.log('[ONBOARDING] customer.created received — ignoring (not a manual test customer)');
+      return;
+    }
+
+    const isScale  = text.includes('scale');
+    const isSystem = text.includes('system');
+    const isStory  = text.includes('story');
+    const plan = isScale ? 'Scale' : isSystem ? 'System' : isStory ? 'Story' : 'Spark';
+    const language = text.includes('nl') ? 'nl' : 'en';
+
+    console.log('[ONBOARDING] Manual test customer.created:', customer.name || customer.email, `(${plan}, ${language})`);
+
+    onboardingAgent.handleNewCustomer(customer, plan, language).catch(err => {
+      console.error('[ONBOARDING] Unhandled error in handleNewCustomer:', err.message);
+    });
     return;
   }
 

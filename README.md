@@ -152,10 +152,17 @@ STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js spark en
 STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js spark nl
 ```
 Sends a synthetic, correctly-signed `checkout.session.completed` event straight
-to `/stripe-webhook` — this is what actually triggers onboarding now, so
-creating a bare Stripe customer no longer does anything (`customer.created`
-is intentionally ignored). Pass a third argument to target a different URL,
-e.g. `http://localhost:3000/stripe-webhook` for local testing.
+to `/stripe-webhook` — this is what triggers onboarding for the 4 live plans.
+Pass a third argument to target a different URL, e.g.
+`http://localhost:3000/stripe-webhook` for local testing.
+
+**Manual test customer (quicker, no signing needed):** Stripe Dashboard →
+Customers → **+ Add customer** → set the description to something like
+`Veyra 10-Pack EN` or `Veyra 10-Pack NL`. This uses the legacy Veyra 10-Pack
+product as a dedicated test lane on `customer.created` — real customers from
+the 4 live plans never match "10-pack"/"test" in their description, so this
+can't double-fire onboarding for them. Include `spark`/`scale`/`system`/`story`
+in the description too if you want a plan other than the default (Spark).
 
 **Notion webhook:**
 ```bash

@@ -146,6 +146,17 @@ Set these in hPanel → **Advanced** → **Node.js** → your app → **Environm
 curl https://agents.veyrastudios.eu/health
 ```
 
+**Stripe checkout webhook (any plan/language, no real payment):**
+```bash
+STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js spark en
+STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js spark nl
+```
+Sends a synthetic, correctly-signed `checkout.session.completed` event straight
+to `/stripe-webhook` — this is what actually triggers onboarding now, so
+creating a bare Stripe customer no longer does anything (`customer.created`
+is intentionally ignored). Pass a third argument to target a different URL,
+e.g. `http://localhost:3000/stripe-webhook` for local testing.
+
 **Notion webhook:**
 ```bash
 curl -X POST https://agents.veyrastudios.eu/notion-webhook \

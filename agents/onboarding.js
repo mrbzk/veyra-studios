@@ -365,14 +365,14 @@ async function checkPendingOnboarding() {
       const url = KICKOFF_BOOKING_URL;
       const CHASE_MESSAGES = {
         en: {
-          1: `Hey ${firstName} 👋\n\nJust a quick reminder to book your kickoff call when you get a moment — it's the last step before we can start on your project.\n\n🔗 ${url}\n\nLooking forward to speaking with you.`,
-          3: `Hi ${firstName},\n\nWe noticed your kickoff call isn't booked yet. We can't begin production until we've walked through your brief together, so whenever you have a moment it would be great to get it in the diary.\n\n🔗 ${url}\n\nIf none of the times work for you, just reply here and we'll find one that does.`,
-          7: `Hi ${firstName},\n\nThis is our final reminder to book your kickoff call. Your project start date is being held until we've spoken.\n\n🔗 ${url}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Paid Trial.`,
+          1: `Hi ${firstName},\n\nA quick reminder to book your kickoff call when you have a moment. It's the last step before we can start on your project.\n\n${url}\n\nLooking forward to speaking with you.`,
+          3: `Hi ${firstName},\n\nWe noticed your kickoff call isn't booked yet. We can't begin production until we've walked through your brief together, so whenever you have a moment it would be great to get it in the diary.\n\n${url}\n\nIf none of the times work for you, just reply here and we'll find one that does.`,
+          7: `Hi ${firstName},\n\nThis is our final reminder to book your kickoff call. Your project start date is being held until we've spoken.\n\n${url}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Paid Trial.`,
         },
         nl: {
-          1: `Hey ${firstName} 👋\n\nEven een korte herinnering om je kickoffgesprek in te plannen wanneer het je uitkomt — het is de laatste stap voor we met je project kunnen starten.\n\n🔗 ${url}\n\nWe kijken ernaar uit om je te spreken.`,
-          3: `Hoi ${firstName},\n\nWe zien dat je kickoffgesprek nog niet is ingepland. We kunnen pas starten met de productie zodra we je brief samen hebben doorgenomen, dus als je even tijd hebt zou het top zijn om dit in te plannen.\n\n🔗 ${url}\n\nPast geen enkel moment? Laat het hier gewoon weten en we zoeken samen een tijdstip dat wel lukt.`,
-          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering om je kickoffgesprek in te plannen. De startdatum van je project staat on hold tot we elkaar gesproken hebben.\n\n🔗 ${url}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je proefpakket haalt.`,
+          1: `Hoi ${firstName},\n\nEen korte herinnering om je kickoffgesprek in te plannen wanneer het je uitkomt. Het is de laatste stap voor we met je project kunnen starten.\n\n${url}\n\nWe kijken ernaar uit om je te spreken.`,
+          3: `Hoi ${firstName},\n\nWe zien dat je kickoffgesprek nog niet is ingepland. We kunnen pas starten met de productie zodra we je brief samen hebben doorgenomen, dus als je even tijd hebt zou het top zijn om dit in te plannen.\n\n${url}\n\nPast geen enkel moment? Laat het hier gewoon weten en we zoeken samen een tijdstip dat wel lukt.`,
+          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering om je kickoffgesprek in te plannen. De startdatum van je project staat on hold tot we elkaar gesproken hebben.\n\n${url}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je proefpakket haalt.`,
         },
       };
       const message = CHASE_MESSAGES[language][dayBucket];

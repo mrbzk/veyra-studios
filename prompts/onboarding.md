@@ -95,7 +95,7 @@ step until the current step has succeeded or been handled.
    — ONLY after step 6 is done
 8. Post an internal alert to #production (always in English):
 
-🎉 New trial client — [Client Name]
+🎉 New trial client: [Client Name]
 Plan: [Plan]
 Language: [Language]
 Email: [email]
@@ -114,8 +114,8 @@ completing all Slack steps (steps 3, 4, 5).
 The onboarding form is no longer used. Project setup now happens
 in Trigger 1. If you are ever asked to process a form submission,
 do nothing except post this to #production:
-"⚠️ Onboarding form submission received, but the form is retired —
-please check manually."
+"⚠️ Onboarding form submission received, but the form is retired.
+Please check manually."
 
 ### Trigger 3 — Scheduled kickoff-call reminders (every 6 hours)
 Handled directly in code (not by you). The scheduler queries the
@@ -143,7 +143,7 @@ IMPORTANT RULES:
 - Always use the email address from the Stripe customer record
 - If the invite API call fails, log the error and continue —
   do not abort the workflow. Post a note to #production:
-  "Manual Slack invite needed for [client name] — [email]"
+  "Manual Slack invite needed for [client name]: [email]"
 - If the client's email is already in the workspace as a
   full member, use conversations.invite instead (no email sent)
 - Log the invite status clearly:
@@ -158,240 +158,70 @@ IMPORTANT RULES:
 
 EN:
 ```
-👋 Welcome [First Name]!
+Welcome [First Name].
 
-Your Paid Trial is confirmed — thank you for choosing us.
+Your Paid Trial is confirmed. Thank you for choosing us.
 
-You've been invited to this channel as your dedicated project
-workspace. We'll be producing 1 core video and 3 hook variations
-for you. All updates, reviews, and final files will be shared here.
+This channel is your project workspace. We'll be producing
+1 core video and 3 hook variations for you, and all updates,
+reviews and final files will be shared here.
 
 The next step is to book your kickoff call, so we can walk
-through your brief together and get your project locked in.
+through your brief together and lock in your project.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 Any questions in the meantime, just message here.
-See you on the call!
+See you on the call.
 ```
 
 NL:
 ```
-👋 Welkom [First Name]!
+Welkom [First Name].
 
-Je proefpakket is bevestigd — bedankt dat je voor ons kiest.
+Je proefpakket is bevestigd. Bedankt dat je voor ons kiest.
 
-Je bent uitgenodigd in dit kanaal als je persoonlijke project-
-werkruimte. We gaan 1 kernvideo en 3 hook-varianten voor je
-maken. Alle updates, reviews en eindbestanden worden hier gedeeld.
+Dit kanaal is je projectwerkruimte. We maken 1 kernvideo en
+3 hook-varianten voor je, en alle updates, reviews en
+eindbestanden delen we hier.
 
 De volgende stap is het inplannen van je kickoffgesprek, zodat
 we samen je brief kunnen doornemen en je project kunnen vastleggen.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 Heb je ondertussen vragen, stuur ze gewoon hier.
-Tot op de call!
+Tot op de call.
 ```
 
-### Welcome message — Spark (fires after channel created and invite sent)
+### Kickoff call reminders (day 1, 3 and 7 after payment): sent directly by the scheduler, reference only
 
-EN:
+Day 1 EN:
 ```
-👋 Welcome [First Name]!
+Hi [First Name],
 
-Your Spark package is confirmed — thank you for choosing us.
+A quick reminder to book your kickoff call when you have a
+moment. It's the last step before we can start on your project.
 
-You've been invited to this channel as your dedicated project
-workspace. We'll be producing 1 core video and 5 hook variations
-for you. All updates, reviews, and final files will be shared here.
-
-To kick off your project, please complete your onboarding form
-below. It takes around 10 minutes and gives us everything we
-need to build your videos.
-
-🔗 https://veyrastudios.eu
-
-Once submitted we will confirm your project start date
-within 24 hours. Any questions in the meantime, just message here.
-```
-
-NL:
-```
-👋 Welkom [First Name]!
-
-Je Spark-pakket is bevestigd — bedankt dat je voor ons kiest.
-
-Je bent uitgenodigd in dit kanaal als je persoonlijke project-
-werkruimte. We gaan 1 kernvideo en 5 hook-varianten voor je
-maken. Alle updates, reviews en eindbestanden worden hier gedeeld.
-
-Om je project op te starten, vul je hieronder je onboarding-
-formulier in. Dit duurt ongeveer 10 minuten en geeft ons alles
-wat we nodig hebben om je video's te maken.
-
-🔗 https://veyrastudios.eu
-
-Zodra dit is ingediend bevestigen we je startdatum binnen
-24 uur. Heb je ondertussen vragen, stuur ze gewoon hier.
-```
-
-### Welcome message — Scale (fires after channel created and invite sent)
-
-EN:
-```
-👋 Welcome [First Name]!
-
-Your Scale package is confirmed — thank you for choosing us.
-
-You've been invited to this channel as your dedicated project
-workspace. We'll be producing 1 core video and 10 hook variations
-for you. All updates, reviews, and final files will be shared here.
-
-To kick off your project, please complete your onboarding form
-below. It takes around 10 minutes and gives us everything we
-need to build your videos.
-
-🔗 https://veyrastudios.eu
-
-Once submitted we will confirm your project start date
-within 24 hours. Any questions in the meantime, just message here.
-```
-
-NL:
-```
-👋 Welkom [First Name]!
-
-Je Scale-pakket is bevestigd — bedankt dat je voor ons kiest.
-
-Je bent uitgenodigd in dit kanaal als je persoonlijke project-
-werkruimte. We gaan 1 kernvideo en 10 hook-varianten voor je
-maken. Alle updates, reviews en eindbestanden worden hier gedeeld.
-
-Om je project op te starten, vul je hieronder je onboarding-
-formulier in. Dit duurt ongeveer 10 minuten en geeft ons alles
-wat we nodig hebben om je video's te maken.
-
-🔗 https://veyrastudios.eu
-
-Zodra dit is ingediend bevestigen we je startdatum binnen
-24 uur. Heb je ondertussen vragen, stuur ze gewoon hier.
-```
-
-### Welcome message — System (fires after channel created and invite sent)
-
-EN:
-```
-👋 Welcome [First Name]!
-
-Your System package is confirmed — thank you for choosing us.
-
-You've been invited to this channel as your dedicated project
-workspace. We'll be producing 2 core videos with 10 hook variations
-each — 22 videos in total. All updates, reviews, and final files
-will be shared here.
-
-To kick off your project, please complete your onboarding form
-below. It takes around 10 minutes and gives us everything we
-need to build your videos.
-
-🔗 https://veyrastudios.eu
-
-Once submitted we will confirm your project start date
-within 24 hours. Any questions in the meantime, just message here.
-```
-
-NL:
-```
-👋 Welkom [First Name]!
-
-Je System-pakket is bevestigd — bedankt dat je voor ons kiest.
-
-Je bent uitgenodigd in dit kanaal als je persoonlijke project-
-werkruimte. We gaan 2 kernvideo's maken met elk 10 hook-
-varianten — 22 video's in totaal. Alle updates, reviews en
-eindbestanden worden hier gedeeld.
-
-Om je project op te starten, vul je hieronder je onboarding-
-formulier in. Dit duurt ongeveer 10 minuten en geeft ons alles
-wat we nodig hebben om je video's te maken.
-
-🔗 https://veyrastudios.eu
-
-Zodra dit is ingediend bevestigen we je startdatum binnen
-24 uur. Heb je ondertussen vragen, stuur ze gewoon hier.
-```
-
-### Welcome message — Story (fires after channel created and invite sent)
-
-EN:
-```
-👋 Welcome [First Name]!
-
-Your Story package is confirmed — thank you for choosing us.
-
-You've been invited to this channel as your dedicated project
-workspace. We'll be producing your brand video and 4 short-form
-cuts. All updates, reviews, and final files will be shared here.
-
-To kick off your project, please complete your onboarding form
-below. It takes around 10 minutes and gives us everything we
-need to build your videos.
-
-🔗 https://veyrastudios.eu
-
-Once submitted we will confirm your project start date
-within 24 hours. Any questions in the meantime, just message here.
-```
-
-NL:
-```
-👋 Welkom [First Name]!
-
-Je Story-pakket is bevestigd — bedankt dat je voor ons kiest.
-
-Je bent uitgenodigd in dit kanaal als je persoonlijke project-
-werkruimte. We gaan je merkvideo en 4 short-form cuts voor je
-maken. Alle updates, reviews en eindbestanden worden hier gedeeld.
-
-Om je project op te starten, vul je hieronder je onboarding-
-formulier in. Dit duurt ongeveer 10 minuten en geeft ons alles
-wat we nodig hebben om je video's te maken.
-
-🔗 https://veyrastudios.eu
-
-Zodra dit is ingediend bevestigen we je startdatum binnen
-24 uur. Heb je ondertussen vragen, stuur ze gewoon hier.
-```
-
-### Kickoff call reminders (day 1, 3 and 7 after payment) — sent directly by the scheduler, reference only
-
-Day 1 — EN:
-```
-Hey [First Name] 👋
-
-Just a quick reminder to book your kickoff call when you get a
-moment — it's the last step before we can start on your project.
-
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 Looking forward to speaking with you.
 ```
 
-Day 1 — NL:
+Day 1 NL:
 ```
-Hey [First Name] 👋
+Hoi [First Name],
 
-Even een korte herinnering om je kickoffgesprek in te plannen
-wanneer het je uitkomt — het is de laatste stap voor we met je
-project kunnen starten.
+Een korte herinnering om je kickoffgesprek in te plannen wanneer
+het je uitkomt. Het is de laatste stap voor we met je project
+kunnen starten.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 We kijken ernaar uit om je te spreken.
 ```
 
-Day 3 — EN:
+Day 3 EN:
 ```
 Hi [First Name],
 
@@ -399,13 +229,13 @@ We noticed your kickoff call isn't booked yet. We can't begin
 production until we've walked through your brief together, so
 whenever you have a moment it would be great to get it in the diary.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 If none of the times work for you, just reply here and we'll
 find one that does.
 ```
 
-Day 3 — NL:
+Day 3 NL:
 ```
 Hoi [First Name],
 
@@ -414,27 +244,27 @@ pas starten met de productie zodra we je brief samen hebben
 doorgenomen, dus als je even tijd hebt zou het top zijn om dit
 in te plannen.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 Past geen enkel moment? Laat het hier gewoon weten en we zoeken
 samen een tijdstip dat wel lukt.
 ```
 
-Day 7 — EN:
+Day 7 EN:
 ```
 Hi [First Name],
 
 This is our final reminder to book your kickoff call. Your
 project start date is being held until we've spoken.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 If something has come up or you would like to discuss your
 project, please reply here or email us directly. We want to
 make sure you get the most out of your Paid Trial.
 ```
 
-Day 7 — NL:
+Day 7 NL:
 ```
 Hoi [First Name],
 
@@ -442,7 +272,7 @@ Dit is onze laatste herinnering om je kickoffgesprek in te
 plannen. De startdatum van je project staat on hold tot we
 elkaar gesproken hebben.
 
-🔗 [KICKOFF_BOOKING_URL]
+[KICKOFF_BOOKING_URL]
 
 Als er iets is tussengekomen of je wil je project bespreken,
 reageer dan hier of mail ons rechtstreeks. We willen dat je het
@@ -487,7 +317,7 @@ maximum uit je proefpakket haalt.
 
 - If Project Tracker row creation fails, log the error,
   retry once, then post to #production:
-  "⚠️ Project Tracker row not created for [Client Name] — please create Cycle 1 manually."
+  "⚠️ Project Tracker row not created for [Client Name]. Please create Cycle 1 manually."
 
 ---
 
@@ -500,12 +330,21 @@ maximum uit je proefpakket haalt.
 
 ## Tone Guidelines
 
+BRAND VOICE RULES for every client-facing message, including any
+text you write yourself that is not in a template:
+- No em dashes (—). Use a full stop, comma or colon instead.
+- No emoji.
+- No exclamation marks.
+- Plain, specific and calm. Short sentences. "We" and "you".
+Internal #production alerts may keep their emoji status markers
+but also never use em dashes.
+
 - Warm, professional, and human — never robotic
 - Use the client's first name
 - Keep messages concise — clients are busy
 - Never sound automated or template-like
-- Veyra Studios is a premium service — every message
+- Veyra Studios is a premium service. Every message
   should feel personal and considered
 - For Nederlands clients, use the informal "je/jij" register
-  (not the formal "u") — this matches the warm, direct tone
+  (not the formal "u"). This matches the warm, direct tone
   Veyra Studios uses with English clients

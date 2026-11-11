@@ -27,6 +27,7 @@ function isPaidTrial(meta) {
 app.use('/stripe-webhook', express.raw({ type: '*/*' }));
 app.use('/slack-events', express.raw({ type: '*/*' }));
 app.use('/slack-interactive', express.raw({ type: '*/*' }));
+app.use('/slack-commands', express.raw({ type: '*/*' }));
 
 // JSON parsing for all other routes
 app.use(express.json());
@@ -341,6 +342,46 @@ app.post('/slack-interactive', async (req, res) => {
 
   productionAgent.handleClientApproval(projectTrackerPageId, channelName).catch(err => {
     console.error('[PRODUCTION] Unhandled error in handleClientApproval:', err.message);
+  });
+});
+
+// ─── POST /slack-commands ────────────────────────────────────────────────────
+// Slash commands. Currently: /booked (see agents/booking.js).
+// Unlike the other Slack routes, this one refuses to run without
+// SLACK_SIGNING_SECRET, because it changes client records.
+app.post('/slack-commands', (req, res) => {
+  if (!process.env.SLACK_SIGNING_SECRET) {
+    console.error('[SLACK] /slack-commands called but SLACK_SIGNING_SECRET is not set');
+    return res.status(503).send('Slash commands are not configured on the server.');
+  }
+
+  const rawBody = req.body.toString();
+  const sig = req.headers['x-slack-signature'];
+  const ts = req.headers['x-slack-request-timestamp'];
+  if (!sig || !ts || !verifySlackSignature(rawBody, sig, ts)) {
+    console.error('[SLACK] Slash command signature verification failed');
+    return res.status(401).send('Signature verification failed');
+  }
+
+  const params = new URLSearchParams(rawBody);
+  const command = params.get('command');
+
+  if (command !== '/booked') {
+    return res.status(200).json({ response_type: 'ephemeral', text: `Unknown command ${command}.` });
+  }
+
+  // Slack needs an answer within 3 seconds; the real reply follows via response_url.
+  res.status(200).send();
+
+  bookingAgent.handleBookedCommand({
+    channelId: params.get('channel_id'),
+    channelName: params.get('channel_name'),
+    userId: params.get('user_id'),
+    userName: params.get('user_name'),
+    text: params.get('text'),
+    responseUrl: params.get('response_url'),
+  }).catch(err => {
+    console.error('[BOOKING] Unhandled error in handleBookedCommand:', err.message);
   });
 });
 

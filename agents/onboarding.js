@@ -250,6 +250,9 @@ async function runAgent(userMessage) {
   }
 }
 
+// Where clients book their kickoff call (welcome message + reminders)
+const KICKOFF_BOOKING_URL = process.env.KICKOFF_BOOKING_URL || 'https://veyrastudios.eu/onboarding';
+
 async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en') {
   const languageLabel = language === 'nl' ? 'Nederlands' : 'English';
   console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan}, ${languageLabel})`);
@@ -265,8 +268,10 @@ async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en')
       '',
       'Environment:',
       `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
+      `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
       `SLACK_ADMIN_USER_ID: ${process.env.SLACK_ADMIN_USER_ID}`,
-      `ONBOARDING_FORM_URL: ${process.env.ONBOARDING_FORM_URL || 'https://veyrastudios.eu'}`,
+      `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
+      `KICKOFF_BOOKING_URL: ${KICKOFF_BOOKING_URL}`,
       '',
       'Follow Trigger 1 in your system prompt. Complete all steps in order.',
     ].join('\n');
@@ -278,35 +283,6 @@ async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en')
     await slack.postMessage(
       process.env.INTERNAL_SLACK_CHANNEL || 'production',
       `🚨 Onboarding agent failed for: ${customer.name || customer.email}\nError: ${err.message}\nManual onboarding required.`
-    ).catch(() => {});
-  }
-}
-
-async function handleFormSubmission(page) {
-  const pageId = page.id || page.page_id || 'unknown';
-  console.log(`[ONBOARDING] Processing form submission for page: ${pageId}`);
-  try {
-    const userMessage = [
-      'A new Notion Client DB row has been detected — the onboarding form has been submitted.',
-      '',
-      'Page data:',
-      JSON.stringify(page, null, 2),
-      '',
-      'Environment:',
-      `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
-      `NOTION_PROJECT_TRACKER_ID: ${process.env.NOTION_PROJECT_TRACKER_ID}`,
-      `INTERNAL_SLACK_CHANNEL: ${process.env.INTERNAL_SLACK_CHANNEL || 'production'}`,
-      '',
-      'Follow Trigger 2 in your system prompt. Complete all 5 steps.',
-    ].join('\n');
-
-    await runAgent(userMessage);
-    console.log(`[ONBOARDING] Completed form submission processing for page: ${pageId}`);
-  } catch (err) {
-    console.error(`[ONBOARDING] handleFormSubmission failed: ${err.message}`);
-    await slack.postMessage(
-      process.env.INTERNAL_SLACK_CHANNEL || 'production',
-      `🚨 Form submission agent failed for page: ${pageId}\nError: ${err.message}\nManual setup required.`
     ).catch(() => {});
   }
 }
@@ -323,12 +299,15 @@ function getPageTitle(page) {
   return '';
 }
 
+// Reminds Paid Trial clients to book their kickoff call on day 1, 3 and 7
+// after payment, until "Kickoff Call Booked" is ticked on their Client DB row.
 async function checkPendingOnboarding() {
-  console.log('[SCHEDULER] Checking for pending onboarding follow-ups');
+  console.log('[SCHEDULER] Checking for unbooked kickoff calls');
 
   const filter = {
     and: [
-      { property: 'Onboarding Form Submitted', checkbox: { equals: false } },
+      { property: 'Client Type', select: { equals: 'Trial' } },
+      { property: 'Kickoff Call Booked', checkbox: { equals: false } },
       { property: 'Payment Date', date: { is_not_empty: true } },
     ],
   };
@@ -383,17 +362,17 @@ async function checkPendingOnboarding() {
         continue;
       }
 
-      const formUrl = process.env.ONBOARDING_FORM_URL || 'https://veyrastudios.eu';
+      const url = KICKOFF_BOOKING_URL;
       const CHASE_MESSAGES = {
         en: {
-          1: `Hey ${firstName} 👋\n\nJust a quick reminder to complete your onboarding form when you get a moment — it is the last step before we can kick off your project.\n\n🔗 ${formUrl}\n\nTakes about 10 minutes. Looking forward to getting started with you.`,
-          3: `Hi ${firstName},\n\nWe noticed your onboarding form is still outstanding. We cannot begin production until it is complete, so whenever you have 10 minutes it would be great to get this done.\n\n🔗 ${formUrl}\n\nIf you have any questions or need help with any of the questions, just reply here and we will help you out.`,
-          7: `Hi ${firstName},\n\nThis is our final reminder about your onboarding form. Your project start date is being held until this is complete.\n\n🔗 ${formUrl}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Veyra Studios package.`,
+          1: `Hey ${firstName} 👋\n\nJust a quick reminder to book your kickoff call when you get a moment — it's the last step before we can start on your project.\n\n🔗 ${url}\n\nLooking forward to speaking with you.`,
+          3: `Hi ${firstName},\n\nWe noticed your kickoff call isn't booked yet. We can't begin production until we've walked through your brief together, so whenever you have a moment it would be great to get it in the diary.\n\n🔗 ${url}\n\nIf none of the times work for you, just reply here and we'll find one that does.`,
+          7: `Hi ${firstName},\n\nThis is our final reminder to book your kickoff call. Your project start date is being held until we've spoken.\n\n🔗 ${url}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Paid Trial.`,
         },
         nl: {
-          1: `Hey ${firstName} 👋\n\nEven een korte herinnering om je onboardingformulier in te vullen wanneer het je uitkomt — het is de laatste stap voor we van start kunnen gaan met je project.\n\n🔗 ${formUrl}\n\nDuurt zo'n 10 minuten. We kijken ernaar uit om met je aan de slag te gaan.`,
-          3: `Hoi ${firstName},\n\nWe zien dat je onboardingformulier nog niet is ingevuld. We kunnen pas starten met de productie zodra dit compleet is, dus als je 10 minuutjes hebt zou het top zijn om dit af te ronden.\n\n🔗 ${formUrl}\n\nHeb je vragen of hulp nodig bij een van de vragen, laat het hier gewoon weten en we helpen je verder.`,
-          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering over je onboardingformulier. De startdatum van je project staat on hold tot dit is afgerond.\n\n🔗 ${formUrl}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je Veyra Studios-pakket haalt.`,
+          1: `Hey ${firstName} 👋\n\nEven een korte herinnering om je kickoffgesprek in te plannen wanneer het je uitkomt — het is de laatste stap voor we met je project kunnen starten.\n\n🔗 ${url}\n\nWe kijken ernaar uit om je te spreken.`,
+          3: `Hoi ${firstName},\n\nWe zien dat je kickoffgesprek nog niet is ingepland. We kunnen pas starten met de productie zodra we je brief samen hebben doorgenomen, dus als je even tijd hebt zou het top zijn om dit in te plannen.\n\n🔗 ${url}\n\nPast geen enkel moment? Laat het hier gewoon weten en we zoeken samen een tijdstip dat wel lukt.`,
+          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering om je kickoffgesprek in te plannen. De startdatum van je project staat on hold tot we elkaar gesproken hebben.\n\n🔗 ${url}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je proefpakket haalt.`,
         },
       };
       const message = CHASE_MESSAGES[language][dayBucket];
@@ -412,10 +391,10 @@ async function checkPendingOnboarding() {
   } while (cursor);
 
   if (checkedCount === 0) {
-    console.log('[SCHEDULER] No pending onboarding follow-ups');
+    console.log('[SCHEDULER] No unbooked kickoff calls to chase');
   } else {
-    console.log(`[SCHEDULER] Checked ${checkedCount} pending clients, sent ${chasedCount} chase messages`);
+    console.log(`[SCHEDULER] Checked ${checkedCount} pending clients, sent ${chasedCount} kickoff reminders`);
   }
 }
 
-module.exports = { handleNewCustomer, handleFormSubmission, checkPendingOnboarding };
+module.exports = { handleNewCustomer, checkPendingOnboarding };

@@ -107,61 +107,14 @@ app.post('/stripe-webhook', async (req, res) => {
 });
 
 // ─── POST /notion-webhook ────────────────────────────────────────────────────
-app.post('/notion-webhook', async (req, res) => {
-  // Always return 200 — process async
+// Previously processed onboarding form submissions. The form is retired:
+// clients now go straight to booking their kickoff call, and the Cycle 1
+// project is set up at payment time. Kept as a no-op so any leftover Notion
+// automation pointing here gets a 200 instead of retrying.
+app.post('/notion-webhook', (req, res) => {
   res.status(200).json({ received: true });
-
-  const payload = req.body;
-
-  // Notion automations send a minimal payload — extract the page ID from wherever it lives
-  const pageId = payload?.id || payload?.page_id || payload?.data?.page_id || payload?.data?.id;
-
-  if (!pageId) {
-    console.log('[ONBOARDING] Notion webhook — no page ID in payload, skipping. Keys:', Object.keys(payload || {}).join(', '));
-    return;
-  }
-
-  // Fetch the full page from Notion so we have all properties regardless of payload format
-  let page;
-  try {
-    const notion = require('./utils/notion');
-    page = await notion.getPage(pageId);
-  } catch (err) {
-    console.error('[ONBOARDING] Notion webhook — failed to fetch page:', err.message);
-    return;
-  }
-
-  // Only process rows from the Client DB
-  const dbId = page?.parent?.database_id?.replace(/-/g, '');
-  const clientDbId = (process.env.NOTION_CLIENT_DB_ID || '').replace(/-/g, '');
-  if (clientDbId && dbId && dbId !== clientDbId) {
-    console.log('[ONBOARDING] Notion webhook — wrong database, skipping');
-    return;
-  }
-
-  // Skip if already processed
-  const formSubmitted = page?.properties?.['Onboarding Form Submitted']?.checkbox;
-  if (formSubmitted === true) {
-    console.log('[ONBOARDING] Notion webhook — form already submitted, skipping');
-    return;
-  }
-
-  // Skip rows created by the Stripe agent — they already have Slack Channel set.
-  // Real form submissions arrive without a Slack Channel (it's not a form field).
-  const slackChannel = page?.properties?.['Slack Channel']?.rich_text?.[0]?.plain_text;
-  if (slackChannel) {
-    console.log('[ONBOARDING] Notion webhook — agent-created row (Slack Channel set), skipping');
-    return;
-  }
-
-  console.log('[ONBOARDING] Notion webhook received — new Client DB row');
-
-  onboardingAgent.handleFormSubmission(page).catch(err => {
-    console.error('[ONBOARDING] Unhandled error in handleFormSubmission:', err.message);
-  });
+  console.log('[ONBOARDING] Notion webhook received — onboarding form is retired, ignoring');
 });
-
-
 
 // ─── POST /notion-storyboard ─────────────────────────────────────────────────
 app.post('/notion-storyboard', async (req, res) => {
@@ -390,7 +343,7 @@ app.get('/health', (req, res) => {
 
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 cron.schedule('0 */6 * * *', async () => {
-  console.log('[SCHEDULER] Cron triggered — running pending onboarding check');
+  console.log('[SCHEDULER] Cron triggered — running kickoff call reminder check');
   try {
     await onboardingAgent.checkPendingOnboarding();
   } catch (err) {

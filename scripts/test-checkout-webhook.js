@@ -1,36 +1,32 @@
 'use strict';
 
 // Sends a synthetic, correctly-signed checkout.session.completed event to the
-// /stripe-webhook endpoint, so onboarding can be exercised for any plan/language
-// combination without a real Stripe payment.
+// /stripe-webhook endpoint, mimicking a purchase through the Paid Trial EN or
+// Paid Trial NL Payment Link (metadata: plan=trial, language=en|nl), so
+// onboarding can be exercised without a real Stripe payment.
 //
 // Usage:
-//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js <plan> <language> [url]
+//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js <language> [url]
 //
 // Example:
-//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js spark en
-//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js spark nl
-//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js story nl http://localhost:3000/stripe-webhook
+//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js en
+//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl
+//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl http://localhost:3000/stripe-webhook
 
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 
-const [, , planArg, languageArg, urlArg] = process.argv;
+const [, , languageArg, urlArg] = process.argv;
 
-const plan = (planArg || 'spark').toLowerCase();
+const plan = 'trial';
 const language = (languageArg || 'en').toLowerCase();
 const endpoint = urlArg || process.env.WEBHOOK_URL || 'https://agents.veyrastudios.eu/stripe-webhook';
 const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
 if (!secret) {
   console.error('Set STRIPE_WEBHOOK_SECRET in your environment before running this script.');
-  process.exit(1);
-}
-
-if (!['spark', 'scale', 'system', 'story'].includes(plan)) {
-  console.error(`Unknown plan "${plan}" — expected spark, scale, system, or story.`);
   process.exit(1);
 }
 
@@ -77,7 +73,7 @@ const stripeSignatureHeader = `t=${now},v1=${signature}`;
 const target = new URL(endpoint);
 const client = target.protocol === 'http:' ? http : https;
 
-console.log(`Sending checkout.session.completed test event — plan: ${plan}, language: ${language}`);
+console.log(`Sending checkout.session.completed test event — Paid Trial ${language.toUpperCase()}`);
 console.log(`Target: ${endpoint}`);
 
 const req = client.request(

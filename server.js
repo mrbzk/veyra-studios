@@ -11,6 +11,16 @@ const productionAgent = require('./agents/production');
 
 const app = express();
 
+// ─── Onboarding trigger: Paid Trial only ────────────────────────────────────
+const TRIAL_PLAN = 'Paid Trial';
+
+// Accepts metadata.plan values like "trial", "paid trial", "paid-trial",
+// "paid_trial" (case-insensitive).
+function isPaidTrial(meta) {
+  const plan = (meta?.plan || '').toLowerCase().replace(/[\s_-]+/g, '');
+  return plan === 'trial' || plan === 'paidtrial';
+}
+
 // Raw body required for signature verification on these routes
 app.use('/stripe-webhook', express.raw({ type: '*/*' }));
 app.use('/slack-events', express.raw({ type: '*/*' }));
@@ -33,34 +43,30 @@ app.post('/stripe-webhook', async (req, res) => {
   // Acknowledge immediately
   res.status(200).json({ received: true });
 
-  // customer.created fires alongside checkout.session.completed for the same
-  // purchase — real onboarding triggers off the Checkout Session instead
-  // (below), since that's the object that actually carries the Payment
-  // Link's plan/language metadata. The one exception is a manually-created
-  // test customer (via Dashboard "+ Add customer", using the legacy Veyra
-  // 10-Pack product) — that has no Checkout Session at all, so this is the
-  // only manual test lane: type plan/language keywords straight into the
-  // customer's description (e.g. "Veyra 10-Pack EN" or "Veyra 10-Pack NL").
-  // Real customers from the 4 live plans never match "10-pack"/"test", so
-  // this can't double-fire onboarding for them.
+  // Onboarding is triggered ONLY by the two Paid Trial Payment Links
+  // ("Paid Trial EN" / "Paid Trial NL"). Each link carries metadata:
+  //   plan     = trial
+  //   language = en | nl
+  // Any other checkout (Spark/Scale/System/Story links, one-off invoices,
+  // etc.) is ignored here.
+  //
+  // Manual test lane: a customer created by hand in the Stripe Dashboard
+  // ("+ Add customer") with "test" in the description. Add "NL" as a
+  // separate word for a Dutch test (e.g. "test NL"), otherwise English.
   if (event.type === 'customer.created') {
     const customer = event.data.object;
-    const text = `${(customer.description || '')} ${JSON.stringify(customer.metadata || {})}`.toLowerCase();
+    const description = (customer.description || '').toLowerCase();
 
-    if (!text.includes('10-pack') && !text.includes('10 pack') && !text.includes('test')) {
+    if (!/\btest\b/.test(description)) {
       console.log('[ONBOARDING] customer.created received — ignoring (not a manual test customer)');
       return;
     }
 
-    const isScale  = text.includes('scale');
-    const isSystem = text.includes('system');
-    const isStory  = text.includes('story');
-    const plan = isScale ? 'Scale' : isSystem ? 'System' : isStory ? 'Story' : 'Spark';
-    const language = text.includes('nl') ? 'nl' : 'en';
+    const language = /\bnl\b/.test(description) ? 'nl' : 'en';
 
-    console.log('[ONBOARDING] Manual test customer.created:', customer.name || customer.email, `(${plan}, ${language})`);
+    console.log('[ONBOARDING] Manual test customer.created:', customer.name || customer.email, `(${TRIAL_PLAN}, ${language})`);
 
-    onboardingAgent.handleNewCustomer(customer, plan, language).catch(err => {
+    onboardingAgent.handleNewCustomer(customer, TRIAL_PLAN, language).catch(err => {
       console.error('[ONBOARDING] Unhandled error in handleNewCustomer:', err.message);
     });
     return;
@@ -71,25 +77,19 @@ app.post('/stripe-webhook', async (req, res) => {
   const session = event.data.object;
   const meta = session.metadata || {};
   const details = session.customer_details || {};
-  const descAndMeta = `${(details.name || '')} ${JSON.stringify(meta)}`.toLowerCase();
 
-  // Prefer the explicit metadata tag set on the Payment Link; fall back to
-  // keyword sniffing for any link that hasn't been tagged yet.
-  const planMeta = (meta.plan || '').toLowerCase();
-  const isSpark  = planMeta === 'spark'  || descAndMeta.includes('spark');
-  const isScale  = planMeta === 'scale'  || descAndMeta.includes('scale');
-  const isSystem = planMeta === 'system' || descAndMeta.includes('system');
-  const isStory  = planMeta === 'story'  || descAndMeta.includes('story');
-
-  if (!isSpark && !isScale && !isSystem && !isStory) {
-    console.log('[ONBOARDING] Skipping non-Veyra checkout session:', details.email);
+  if (!isPaidTrial(meta)) {
+    console.log('[ONBOARDING] Skipping checkout session — not a Paid Trial link:', details.email, `(metadata.plan: "${meta.plan || ''}")`);
     return;
   }
 
-  const plan = isSpark ? 'Spark' : isScale ? 'Scale' : isSystem ? 'System' : 'Story';
-  const language = (meta.language || '').toLowerCase() === 'nl' ? 'nl' : 'en';
+  const languageMeta = (meta.language || '').toLowerCase().trim();
+  if (languageMeta !== 'en' && languageMeta !== 'nl') {
+    console.warn(`[ONBOARDING] Paid Trial checkout has missing/unknown metadata.language ("${meta.language || ''}") — defaulting to English`);
+  }
+  const language = languageMeta === 'nl' ? 'nl' : 'en';
 
-  console.log('[ONBOARDING] Webhook received — checkout.session.completed:', details.name || details.email, `(${plan}, ${language})`);
+  console.log('[ONBOARDING] Webhook received — checkout.session.completed:', details.name || details.email, `(${TRIAL_PLAN}, ${language})`);
 
   // Reshape into the customer-like object handleNewCustomer expects
   const customer = {
@@ -101,67 +101,20 @@ app.post('/stripe-webhook', async (req, res) => {
     metadata: meta,
   };
 
-  onboardingAgent.handleNewCustomer(customer, plan, language).catch(err => {
+  onboardingAgent.handleNewCustomer(customer, TRIAL_PLAN, language).catch(err => {
     console.error('[ONBOARDING] Unhandled error in handleNewCustomer:', err.message);
   });
 });
 
 // ─── POST /notion-webhook ────────────────────────────────────────────────────
-app.post('/notion-webhook', async (req, res) => {
-  // Always return 200 — process async
+// Previously processed onboarding form submissions. The form is retired:
+// clients now go straight to booking their kickoff call, and the Cycle 1
+// project is set up at payment time. Kept as a no-op so any leftover Notion
+// automation pointing here gets a 200 instead of retrying.
+app.post('/notion-webhook', (req, res) => {
   res.status(200).json({ received: true });
-
-  const payload = req.body;
-
-  // Notion automations send a minimal payload — extract the page ID from wherever it lives
-  const pageId = payload?.id || payload?.page_id || payload?.data?.page_id || payload?.data?.id;
-
-  if (!pageId) {
-    console.log('[ONBOARDING] Notion webhook — no page ID in payload, skipping. Keys:', Object.keys(payload || {}).join(', '));
-    return;
-  }
-
-  // Fetch the full page from Notion so we have all properties regardless of payload format
-  let page;
-  try {
-    const notion = require('./utils/notion');
-    page = await notion.getPage(pageId);
-  } catch (err) {
-    console.error('[ONBOARDING] Notion webhook — failed to fetch page:', err.message);
-    return;
-  }
-
-  // Only process rows from the Client DB
-  const dbId = page?.parent?.database_id?.replace(/-/g, '');
-  const clientDbId = (process.env.NOTION_CLIENT_DB_ID || '').replace(/-/g, '');
-  if (clientDbId && dbId && dbId !== clientDbId) {
-    console.log('[ONBOARDING] Notion webhook — wrong database, skipping');
-    return;
-  }
-
-  // Skip if already processed
-  const formSubmitted = page?.properties?.['Onboarding Form Submitted']?.checkbox;
-  if (formSubmitted === true) {
-    console.log('[ONBOARDING] Notion webhook — form already submitted, skipping');
-    return;
-  }
-
-  // Skip rows created by the Stripe agent — they already have Slack Channel set.
-  // Real form submissions arrive without a Slack Channel (it's not a form field).
-  const slackChannel = page?.properties?.['Slack Channel']?.rich_text?.[0]?.plain_text;
-  if (slackChannel) {
-    console.log('[ONBOARDING] Notion webhook — agent-created row (Slack Channel set), skipping');
-    return;
-  }
-
-  console.log('[ONBOARDING] Notion webhook received — new Client DB row');
-
-  onboardingAgent.handleFormSubmission(page).catch(err => {
-    console.error('[ONBOARDING] Unhandled error in handleFormSubmission:', err.message);
-  });
+  console.log('[ONBOARDING] Notion webhook received — onboarding form is retired, ignoring');
 });
-
-
 
 // ─── POST /notion-storyboard ─────────────────────────────────────────────────
 app.post('/notion-storyboard', async (req, res) => {
@@ -390,7 +343,7 @@ app.get('/health', (req, res) => {
 
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 cron.schedule('0 */6 * * *', async () => {
-  console.log('[SCHEDULER] Cron triggered — running pending onboarding check');
+  console.log('[SCHEDULER] Cron triggered — running kickoff call reminder check');
   try {
     await onboardingAgent.checkPendingOnboarding();
   } catch (err) {

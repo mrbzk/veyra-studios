@@ -103,8 +103,8 @@ Slack: #client-[slug]
 Client DB: [Client DB row URL]
 Project Tracker: [Project Tracker row URL]
 
-Next step: client books their kickoff call. Tick "Kickoff Call Booked"
-on the Client DB row once it's booked to stop the automatic reminders.
+Next step: client books their kickoff call. Once it's booked, type
+/booked in their client channel to stop the automatic reminders.
 
 CRITICAL: You must call slack_invite_admin immediately after
 slack_create_channel returns. Do not skip to Notion before

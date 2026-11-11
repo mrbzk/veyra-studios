@@ -9,7 +9,6 @@ const { verifySlackSignature } = require('./utils/verify-slack');
 const onboardingAgent = require('./agents/onboarding');
 const productionAgent = require('./agents/production');
 const bookingAgent = require('./agents/booking');
-const crypto = require('crypto');
 
 const app = express();
 
@@ -117,35 +116,6 @@ app.post('/stripe-webhook', async (req, res) => {
 app.post('/notion-webhook', (req, res) => {
   res.status(200).json({ received: true });
   console.log('[ONBOARDING] Notion webhook received — onboarding form is retired, ignoring');
-});
-
-// ─── POST /ghl-booking ───────────────────────────────────────────────────────
-// Called by a GoHighLevel workflow when a client books their kickoff call
-// (trigger: Appointment Booked → action: Webhook, POST to
-// https://<server>/ghl-booking?secret=<GHL_WEBHOOK_SECRET>). The secret can
-// also be sent as an "x-veyra-secret" header.
-function hasValidGhlSecret(req) {
-  const expected = process.env.GHL_WEBHOOK_SECRET || '';
-  const given = String(req.headers['x-veyra-secret'] || req.query.secret || '');
-  if (!expected || given.length !== expected.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
-}
-
-app.post('/ghl-booking', (req, res) => {
-  if (!process.env.GHL_WEBHOOK_SECRET) {
-    console.error('[BOOKING] GHL_WEBHOOK_SECRET is not set — rejecting booking webhook');
-    return res.status(503).json({ error: 'Booking webhook not configured' });
-  }
-  if (!hasValidGhlSecret(req)) {
-    console.error('[BOOKING] Invalid or missing secret on /ghl-booking');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  res.status(200).json({ received: true });
-
-  bookingAgent.handleKickoffBooked(req.body).catch(err => {
-    console.error('[BOOKING] Unhandled error in handleKickoffBooked:', err.message);
-  });
 });
 
 // ─── POST /notion-storyboard ─────────────────────────────────────────────────

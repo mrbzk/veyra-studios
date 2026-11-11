@@ -250,7 +250,7 @@ async function runAgent(userMessage) {
   }
 }
 
-async function handleNewCustomer(customer, plan = 'Veyra 10-Pack', language = 'en') {
+async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en') {
   const languageLabel = language === 'nl' ? 'Nederlands' : 'English';
   console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan}, ${languageLabel})`);
   try {

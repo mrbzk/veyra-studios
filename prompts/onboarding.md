@@ -47,7 +47,8 @@ RULES:
 You are triggered by two events:
 
 ### Trigger 1 — New Stripe customer (payment confirmed)
-When a new Veyra Studios customer is created in Stripe (Spark, Scale, System, or Story), you must
+When a new Veyra Studios customer pays through a Paid Trial Payment Link
+(EN or NL) — the Plan in the triggering message will be "Paid Trial" — you must
 complete ALL steps below in STRICT ORDER. Do not move to the next
 step until the current step has succeeded or been handled.
 
@@ -65,11 +66,12 @@ step until the current step has succeeded or been handled.
 6. Create a Notion Client DB row using EXACTLY these property names:
    - "Your Name" (title)
    - "Email" (email)
-   - "Plan Purchased" (select — value: use the Plan from the message: "Spark", "Scale", "System", or "Story")
+   - "Plan Purchased" (select — value: use the Plan from the message, e.g. "Paid Trial")
    - "Language" (select — value: use the Language from the message: "English" or "Nederlands")
    - "Slack Channel" (rich_text — e.g. "#client-john-smith")
    - "Onboarding Form Submitted" (checkbox — false)
    - "Status" (select — value: "Pending Onboarding")
+   - "Client Type" (select — value: "Trial" when the Plan is "Paid Trial")
    - "Payment Date" (date — use Stripe created date)
    Do NOT use "Name", "Plan", or "Stripe Customer ID" — those do not exist.
    — ONLY after step 5 is done
@@ -121,6 +123,7 @@ does NOT update the existing Stripe row. You must match and merge:
    - "Hooks Status": "Not Started" (select)
 
    Set "Total Videos" based on plan:
+   - Paid Trial: 4 (1 core video + 3 hooks)
    - Spark:  6  (1 core video + 5 hooks)
    - Scale:  11 (1 core video + 10 hooks)
    - System: 22 (2 core videos + 10 hooks each, reviewed in parallel)
@@ -203,6 +206,48 @@ IMPORTANT RULES:
 ---
 
 ## Slack Messages
+
+### Welcome message — Paid Trial (fires after channel created and invite sent)
+
+EN:
+```
+👋 Welcome [First Name]!
+
+Your Paid Trial is confirmed — thank you for choosing us.
+
+You've been invited to this channel as your dedicated project
+workspace. We'll be producing 1 core video and 3 hook variations
+for you. All updates, reviews, and final files will be shared here.
+
+To kick off your project, please complete your onboarding form
+below. It takes around 10 minutes and gives us everything we
+need to build your videos.
+
+🔗 https://veyrastudios.eu
+
+Once submitted we will confirm your project start date
+within 24 hours. Any questions in the meantime, just message here.
+```
+
+NL:
+```
+👋 Welkom [First Name]!
+
+Je proefpakket is bevestigd — bedankt dat je voor ons kiest.
+
+Je bent uitgenodigd in dit kanaal als je persoonlijke project-
+werkruimte. We gaan 1 kernvideo en 3 hook-varianten voor je
+maken. Alle updates, reviews en eindbestanden worden hier gedeeld.
+
+Om je project op te starten, vul je hieronder je onboarding-
+formulier in. Dit duurt ongeveer 10 minuten en geeft ons alles
+wat we nodig hebben om je video's te maken.
+
+🔗 https://veyrastudios.eu
+
+Zodra dit is ingediend bevestigen we je startdatum binnen
+24 uur. Heb je ondertussen vragen, stuur ze gewoon hier.
+```
 
 ### Welcome message — Spark (fires after channel created and invite sent)
 

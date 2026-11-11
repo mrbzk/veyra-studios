@@ -105,7 +105,7 @@ hoofdvideo klaar is voor review. 🎬
 Project is now In Production.
 👉 Notion: [Project Tracker page URL]
 
-   **Main video approval (all plans — Spark, Scale, System, Story):**
+   **Main video approval (all plans — Paid Trial, Spark, Scale, System, Story):**
    - Update Project Tracker: Main Video Approved → true, Main Video Approved Date → today,
      Main Video Status → "Approved", Review Stage → "Hooks", Status → "In Production"
    - Post to #production (use plan-appropriate language for hooks/cuts):
@@ -157,6 +157,7 @@ Always read Total Videos from the Project Tracker to identify the plan:
 | 11          | Scale  | 1           | 10 hooks           | Main Video → Hooks → Complete |
 | 22          | System | 2 (parallel)| 10 hooks per video | Main Video → Hooks → Complete |
 | 5           | Story  | 1 brand video | 4 short-form cuts | Main Video → Hooks → Complete |
+| 4           | Paid Trial | 1       | 3 hooks            | Main Video → Hooks → Complete |
 
 All plans follow the same two-stage review: Main Video → Hooks → Complete.
 The difference is only the copy in messages and the asset counts in delivery.
@@ -186,6 +187,42 @@ NEVER advance to Hooks until Main Video is explicitly approved.
 ---
 
 ## Slack Messages
+
+### Storyboard review — Paid Trial (Total Videos = 4)
+
+EN:
+```
+Hi [First Name] 👋
+
+Your storyboard is ready for review.
+
+We have mapped out your core video and 3 hook variations.
+Take a look at the structure, scene breakdown, and hook angles.
+
+🔗 [Storyboard Link]
+
+Once you are happy, reply Approved in this channel
+and we will move straight into production. If you
+want any changes, just leave notes on the page and
+we will revise.
+```
+
+NL:
+```
+Hoi [First Name] 👋
+
+Je storyboard staat klaar voor review.
+
+We hebben je kernvideo en 3 hook-varianten uitgewerkt.
+Bekijk de structuur, scène-opbouw en hook-invalshoeken.
+
+🔗 [Storyboard Link]
+
+Zodra je tevreden bent, reageer je met Approved in dit
+kanaal en gaan we direct door naar productie. Wil je
+wijzigingen, laat dan gewoon notities achter op de
+pagina en wij passen het aan.
+```
 
 ### Storyboard review — Spark (Total Videos = 6)
 
@@ -336,6 +373,36 @@ wijzigingen, laat dan gewoon notities achter op de
 pagina en wij passen het aan.
 ```
 
+### Main video review — Paid Trial (Total Videos = 4)
+
+EN:
+```
+Hi [First Name] 👋
+
+Your core video is ready for review.
+
+Take a look and let us know if you have any feedback.
+
+🔗 [Main Video Drive Link]
+
+Once you are happy we will build out your 3 hook
+variations. Please review within 48 hours.
+```
+
+NL:
+```
+Hoi [First Name] 👋
+
+Je kernvideo staat klaar voor review.
+
+Bekijk hem en laat ons weten of je feedback hebt.
+
+🔗 [Main Video Drive Link]
+
+Zodra je tevreden bent, werken we je 3 hook-varianten
+uit. Review graag binnen 48 uur.
+```
+
 ### Main video review — Spark (Total Videos = 6)
 
 EN:
@@ -451,6 +518,36 @@ Bekijk hem en laat ons weten of je feedback hebt.
 🔗 [Main Video Drive Link]
 
 Zodra je tevreden bent, knippen we je short-form versies.
+Review graag binnen 48 uur.
+```
+
+### Hooks review — Paid Trial (Total Videos = 4)
+
+EN:
+```
+Hi [First Name] 👋
+
+Your 3 hook variations are ready for review.
+
+Each one opens differently but shares the same core.
+
+🔗 [Hooks Drive Link]
+
+Once approved we will send your final delivery.
+Please review within 48 hours.
+```
+
+NL:
+```
+Hoi [First Name] 👋
+
+Je 3 hook-varianten staan klaar voor review.
+
+Elke variant opent anders maar deelt dezelfde kern.
+
+🔗 [Hooks Drive Link]
+
+Na goedkeuring sturen we je eindoplevering.
 Review graag binnen 48 uur.
 ```
 
@@ -581,6 +678,32 @@ Hooks/cuts production can now begin.
 [Project Name] — [Plan]
 
 👉 Notion: [Project Tracker page URL]
+```
+
+### Final delivery message — Paid Trial (4 videos)
+
+EN:
+```
+✅ All 4 videos are approved and ready to download.
+
+Your final files are in the folder below — your core
+video and 3 hook variations, ready to use.
+
+🔗 [Delivery Drive Link]
+
+Download directly from the link above.
+```
+
+NL:
+```
+✅ Alle 4 video's zijn goedgekeurd en klaar om te downloaden.
+
+Je eindbestanden vind je in de map hieronder — je kernvideo
+en 3 hook-varianten, klaar voor gebruik.
+
+🔗 [Delivery Drive Link]
+
+Download rechtstreeks via de link hierboven.
 ```
 
 ### Final delivery message — Spark (6 videos)

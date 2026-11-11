@@ -388,7 +388,7 @@ async function checkPendingOnboarding() {
         en: {
           1: `Hey ${firstName} 👋\n\nJust a quick reminder to complete your onboarding form when you get a moment — it is the last step before we can kick off your project.\n\n🔗 ${formUrl}\n\nTakes about 10 minutes. Looking forward to getting started with you.`,
           3: `Hi ${firstName},\n\nWe noticed your onboarding form is still outstanding. We cannot begin production until it is complete, so whenever you have 10 minutes it would be great to get this done.\n\n🔗 ${formUrl}\n\nIf you have any questions or need help with any of the questions, just reply here and we will help you out.`,
-          7: `Hi ${firstName},\n\nThis is our final reminder about your onboarding form. Your project start date is being held until this is complete.\n\n🔗 ${formUrl}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Veyra 10-Pack.`,
+          7: `Hi ${firstName},\n\nThis is our final reminder about your onboarding form. Your project start date is being held until this is complete.\n\n🔗 ${formUrl}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Veyra Studios package.`,
         },
         nl: {
           1: `Hey ${firstName} 👋\n\nEven een korte herinnering om je onboardingformulier in te vullen wanneer het je uitkomt — het is de laatste stap voor we van start kunnen gaan met je project.\n\n🔗 ${formUrl}\n\nDuurt zo'n 10 minuten. We kijken ernaar uit om met je aan de slag te gaan.`,

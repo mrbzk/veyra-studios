@@ -22,7 +22,7 @@ const [, , languageArg, urlArg] = process.argv;
 
 const plan = 'trial';
 const language = (languageArg || 'en').toLowerCase();
-const endpoint = urlArg || process.env.WEBHOOK_URL || 'https://agents.veyrastudios.eu/stripe-webhook';
+const endpoint = urlArg || process.env.WEBHOOK_URL || 'https://srv.veyrastudios.agency/stripe-webhook';
 const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
 if (!secret) {

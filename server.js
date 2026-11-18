@@ -46,15 +46,17 @@ app.post('/stripe-webhook', async (req, res) => {
   res.status(200).json({ received: true });
 
   // Onboarding is triggered ONLY by the two Paid Trial Payment Links
-  // ("Paid Trial EN" / "Paid Trial NL"). Each link carries metadata:
+  // ("Paid Trial EN" / "Paid Trial NL" / "Paid Trial FR"). Each link
+  // carries metadata:
   //   plan     = trial
-  //   language = en | nl
+  //   language = en | nl | fr
   // Any other checkout (Spark/Scale/System/Story links, one-off invoices,
   // etc.) is ignored here.
   //
   // Manual test lane: a customer created by hand in the Stripe Dashboard
-  // ("+ Add customer") with "test" in the description. Add "NL" as a
-  // separate word for a Dutch test (e.g. "test NL"), otherwise English.
+  // ("+ Add customer") with "test" in the description. Add "NL" or "FR" as
+  // a separate word for a Dutch or French test (e.g. "test NL", "test FR"),
+  // otherwise English.
   if (event.type === 'customer.created') {
     const customer = event.data.object;
     const description = (customer.description || '').toLowerCase();
@@ -64,7 +66,7 @@ app.post('/stripe-webhook', async (req, res) => {
       return;
     }
 
-    const language = /\bnl\b/.test(description) ? 'nl' : 'en';
+    const language = /\bnl\b/.test(description) ? 'nl' : /\bfr\b/.test(description) ? 'fr' : 'en';
 
     console.log('[ONBOARDING] Manual test customer.created:', customer.name || customer.email, `(${TRIAL_PLAN}, ${language})`);
 
@@ -86,10 +88,10 @@ app.post('/stripe-webhook', async (req, res) => {
   }
 
   const languageMeta = (meta.language || '').toLowerCase().trim();
-  if (languageMeta !== 'en' && languageMeta !== 'nl') {
+  if (!['en', 'nl', 'fr'].includes(languageMeta)) {
     console.warn(`[ONBOARDING] Paid Trial checkout has missing/unknown metadata.language ("${meta.language || ''}") — defaulting to English`);
   }
-  const language = languageMeta === 'nl' ? 'nl' : 'en';
+  const language = ['nl', 'fr'].includes(languageMeta) ? languageMeta : 'en';
 
   console.log('[ONBOARDING] Webhook received — checkout.session.completed:', details.name || details.email, `(${TRIAL_PLAN}, ${language})`);
 
@@ -232,7 +234,9 @@ app.post('/slack-events', async (req, res) => {
   if (event.subtype || event.bot_id) return; // ignore edits, deletions, bot messages
 
   const text = (event.text || '').toLowerCase().trim();
-  if (!text.includes('approved') && !text.includes('approve')) return;
+  // "approve(d)" in any language the templates ask for; "approuv" also
+  // catches French clients who reply "approuvé" instead of "Approved".
+  if (!text.includes('approve') && !text.includes('approuv')) return;
 
   const channelId = event.channel;
 

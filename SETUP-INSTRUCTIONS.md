@@ -112,13 +112,13 @@ At [api.slack.com/apps](https://api.slack.com/apps), create or open **Veyra Agen
 ## 7. Stripe
 
 1. **Developers → Webhooks → Add endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed` and `customer.created`. Copy the signing secret → `STRIPE_WEBHOOK_SECRET`.
-2. On the **Paid Trial EN** Payment Link, add metadata `plan` = `trial` and `language` = `EN`. On **Paid Trial NL**: `plan` = `trial`, `language` = `NL`.
+2. On the **Paid Trial EN** Payment Link, add metadata `plan` = `trial` and `language` = `EN`. On **Paid Trial NL**: `plan` = `trial`, `language` = `NL`. On **Paid Trial FR**: `plan` = `trial`, `language` = `FR`.
 
 ## 8. Notion
 
 1. [notion.so/my-integrations](https://www.notion.so/my-integrations) → new integration **Veyra Agent** → copy the token → `NOTION_API_KEY`.
 2. Connect it to the **Client DB** and the **Project Tracker** (database `···` → Connections).
-3. Check every property in the README's "Notion setup" tables exists with the exact name and type. **Language** must be a Select, not Text.
+3. Check every property in the README's "Notion setup" tables exists with the exact name and type. **Language** must be a Select, not Text, with the options `English`, `Nederlands` and `Français`.
 4. Add the two Project Tracker automations from the README, pointing at `/notion-storyboard` and `/notion-video-review`.
 
 ## 9. Restart and test

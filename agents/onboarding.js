@@ -253,8 +253,11 @@ async function runAgent(userMessage) {
 // Where clients book their kickoff call (welcome message + reminders)
 const KICKOFF_BOOKING_URL = process.env.KICKOFF_BOOKING_URL || 'https://veyrastudios.eu/onboarding';
 
+// Language code ↔ the Client DB "Language" select option
+const LANGUAGE_LABELS = { en: 'English', nl: 'Nederlands', fr: 'Français' };
+
 async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en') {
-  const languageLabel = language === 'nl' ? 'Nederlands' : 'English';
+  const languageLabel = LANGUAGE_LABELS[language] || 'English';
   console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan}, ${languageLabel})`);
   try {
     const userMessage = [
@@ -331,7 +334,8 @@ async function checkPendingOnboarding() {
       const email = page.properties?.['Email']?.email || '';
       const slackChannel = page.properties?.['Slack Channel']?.rich_text?.[0]?.plain_text || '';
       const paymentDateStr = page.properties?.['Payment Date']?.date?.start;
-      const language = page.properties?.['Language']?.select?.name === 'Nederlands' ? 'nl' : 'en';
+      const languageName = page.properties?.['Language']?.select?.name;
+      const language = Object.keys(LANGUAGE_LABELS).find(code => LANGUAGE_LABELS[code] === languageName) || 'en';
 
       if (!paymentDateStr) continue;
 
@@ -373,6 +377,11 @@ async function checkPendingOnboarding() {
           1: `Hoi ${firstName},\n\nEen korte herinnering om je kickoffgesprek in te plannen wanneer het je uitkomt. Het is de laatste stap voor we met je project kunnen starten.\n\n${url}\n\nWe kijken ernaar uit om je te spreken.`,
           3: `Hoi ${firstName},\n\nWe zien dat je kickoffgesprek nog niet is ingepland. We kunnen pas starten met de productie zodra we je brief samen hebben doorgenomen, dus als je even tijd hebt zou het top zijn om dit in te plannen.\n\n${url}\n\nPast geen enkel moment? Laat het hier gewoon weten en we zoeken samen een tijdstip dat wel lukt.`,
           7: `Hoi ${firstName},\n\nDit is onze laatste herinnering om je kickoffgesprek in te plannen. De startdatum van je project staat on hold tot we elkaar gesproken hebben.\n\n${url}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je proefpakket haalt.`,
+        },
+        fr: {
+          1: `Bonjour ${firstName},\n\nUn petit rappel pour réserver votre appel de lancement dès que vous avez un moment. C'est la dernière étape avant que nous puissions commencer votre projet.\n\n${url}\n\nAu plaisir d'échanger avec vous.`,
+          3: `Bonjour ${firstName},\n\nNous constatons que votre appel de lancement n'est pas encore réservé. Nous ne pouvons pas démarrer la production avant d'avoir parcouru votre brief ensemble, alors dès que vous avez un moment, ce serait idéal de le planifier.\n\n${url}\n\nSi aucun créneau ne vous convient, répondez simplement ici et nous en trouverons un qui vous arrange.`,
+          7: `Bonjour ${firstName},\n\nCeci est notre dernier rappel pour réserver votre appel de lancement. La date de démarrage de votre projet est en attente jusqu'à notre échange.\n\n${url}\n\nSi un imprévu est survenu ou si vous souhaitez discuter de votre projet, répondez ici ou écrivez-nous directement par e-mail. Nous voulons que vous tiriez le meilleur parti de votre essai payant.`,
         },
       };
       const message = CHASE_MESSAGES[language][dayBucket];

@@ -14,10 +14,10 @@ For a from-scratch setup, see [SETUP-INSTRUCTIONS.md](SETUP-INSTRUCTIONS.md).
 ## How a client moves through the system
 
 ```
-Stripe (Paid Trial EN / NL link)
+Stripe (Paid Trial EN / NL / FR link)
    │  checkout.session.completed
    ▼
-Onboarding agent ──► Slack #client-<name>: invite + welcome (EN/NL) with kickoff booking link
+Onboarding agent ──► Slack #client-<name>: invite + welcome (EN/NL/FR) with kickoff booking link
                  ──► Notion Client DB row (Client Type = Trial, Kickoff Call Booked = false)
                  ──► Notion Project Tracker row "<Name> — Cycle 1" (Total Videos = 4)
                  ──► #production alert
@@ -32,12 +32,12 @@ Production agent ──► storyboard review ─► client replies "Approved"
 ```
 
 ### 1. Payment → onboarding
-- Only the two **Paid Trial** Payment Links start onboarding. Each carries Stripe metadata `plan: trial` and `language: EN` or `NL`. Every other checkout is ignored.
+- Only the three **Paid Trial** Payment Links start onboarding. Each carries Stripe metadata `plan: trial` and `language: EN`, `NL` or `FR`. Every other checkout is ignored.
 - The Paid Trial is the client's **Cycle 1**: 1 core video + 3 hooks (4 videos).
 - There is **no onboarding form**. The welcome message asks the client to book their kickoff call at `KICKOFF_BOOKING_URL`.
 
 ### 2. Kickoff call reminders
-- Every 6 hours the server checks the Client DB for Trial clients whose **Kickoff Call Booked** is unticked, and posts a reminder in their channel on day 1, 3 and 7 after payment (EN or NL). This runs in code, not through the AI.
+- Every 6 hours the server checks the Client DB for Trial clients whose **Kickoff Call Booked** is unticked, and posts a reminder in their channel on day 1, 3 and 7 after payment (EN, NL or FR). This runs in code, not through the AI.
 - When the client has booked, someone on the team types **`/booked`** in the client's channel. That ticks the box and the reminders stop. See [Slack commands](#slack-commands).
 
 ### 3. Production
@@ -47,14 +47,16 @@ Triggered by Notion automations on the Project Tracker:
 |---|---|
 | **Status** → `Storyboard Review` | Posts the **Storyboard Link** to the client, ticks **Storyboard Sent to Client** |
 | **Main Video Status** or **Hooks Status** → `Ready for Review` | Posts the matching Drive link to the client, sets the status to `In Review` |
-| Client types **"Approved"** in their channel (or clicks the storyboard button) | Advances the stage: storyboard → `In Production`; main video → Review Stage `Hooks`; hooks → sends the **Delivery Drive Link**, marks the cycle `Delivered` |
+| Client types **"Approved"** (or "approuvé") in their channel (or clicks the storyboard button) | Advances the stage: storyboard → `In Production`; main video → Review Stage `Hooks`; hooks → sends the **Delivery Drive Link**, marks the cycle `Delivered` |
 
 After delivery, the follow-up depends on **Client Type**:
 - **Trial**: "When you are ready to scale up…" to the client, plus a conversion alert in #production
 - **Recurring**: "When you are ready to kick off your next cycle…"
 - **One-off**: #production alert only
 
-All client messages are in the client's **Language** and follow the Veyra brand voice: no em dashes, emoji or exclamation marks. Internal #production alerts are always in English.
+All client messages are in the client's **Language** (English, Nederlands or Français) and follow the Veyra brand voice: no em dashes, emoji or exclamation marks. Internal #production alerts are always in English.
+
+**French coverage:** FR templates exist for the whole Paid Trial journey (welcome, reminders, storyboard, main video, hooks, delivery, follow-ups). The older Spark/Scale/System/Story review templates are EN/NL only; if a French client hits one, the agent sends English and flags it in #production.
 
 ---
 
@@ -144,7 +146,7 @@ The Notion integration must be connected to both databases (database `···` �
 | Your Name | Title | |
 | Email | Email | |
 | Plan Purchased | Select | `Paid Trial` (older rows may have Spark, Scale, System, Story) |
-| Language | **Select** | `English`, `Nederlands` |
+| Language | **Select** | `English`, `Nederlands`, `Français` |
 | Slack Channel | Text | e.g. `#client-jane-doe`; `/booked` matches on this |
 | Status | Select | `Active` |
 | Client Type | Select | `Trial`, `Recurring`, `One-off`. Reminders only go to `Trial` |
@@ -183,6 +185,7 @@ The Notion integration must be connected to both databases (database `···` �
 - **Webhook endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed` and `customer.created`. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
 - **Paid Trial EN** Payment Link metadata: `plan` = `trial`, `language` = `EN`
 - **Paid Trial NL** Payment Link metadata: `plan` = `trial`, `language` = `NL`
+- **Paid Trial FR** Payment Link metadata: `plan` = `trial`, `language` = `FR`
 
 A Payment Link without `plan: trial` does not start onboarding.
 
@@ -241,7 +244,7 @@ The second should print `401` (reachable, rejected for having no Stripe signatur
 
 ## Testing
 
-**Manual test lane (no payment):** Stripe → Customers → **+ Add customer**, with `test` in the description (`test NL` for Dutch) and an email you control. This runs the full Paid Trial onboarding, including a real Slack invite. Clean up afterwards: archive the Slack channel, delete the Notion rows and the Stripe customer.
+**Manual test lane (no payment):** Stripe → Customers → **+ Add customer**, with `test` in the description (`test NL` for Dutch, `test FR` for French) and an email you control. This runs the full Paid Trial onboarding, including a real Slack invite. Clean up afterwards: archive the Slack channel, delete the Notion rows and the Stripe customer.
 
 **Signed checkout event:**
 
@@ -249,7 +252,7 @@ The second should print `401` (reachable, rejected for having no Stripe signatur
 STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl https://srv.veyrastudios.agency/stripe-webhook
 ```
 
-`en` or `nl`. Without the URL argument it targets the default in the script.
+`en`, `nl` or `fr`. Without the URL argument it targets the default in the script.
 
 ---
 

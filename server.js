@@ -10,6 +10,7 @@ const onboardingAgent = require('./agents/onboarding');
 const productionAgent = require('./agents/production');
 const bookingAgent = require('./agents/booking');
 const subscriptions = require('./agents/subscriptions');
+const delivery = require('./agents/delivery');
 
 const app = express();
 
@@ -52,6 +53,14 @@ app.post('/stripe-webhook', async (req, res) => {
   if (event.type === 'invoice.paid') {
     subscriptions.handleInvoicePaid(event.data.object).catch(err => {
       console.error('[SUBSCRIPTION] Unhandled error in handleInvoicePaid:', err.message);
+    });
+    return;
+  }
+
+  // Package switched (e.g. Launch → Core), cancellation scheduled, or ended.
+  if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+    subscriptions.handleSubscriptionChange(event).catch(err => {
+      console.error('[SUBSCRIPTION] Unhandled error in handleSubscriptionChange:', err.message);
     });
     return;
   }
@@ -211,6 +220,39 @@ app.post('/notion-video-review', async (req, res) => {
 
   productionAgent.handleVideoReview(page).catch(err => {
     console.error('[PRODUCTION] Unhandled error in handleVideoReview:', err.message);
+  });
+});
+
+// ─── POST /notion-delivery ───────────────────────────────────────────────────
+// Notion automation: Project Tracker Status → "Ready to Deliver". Sends the
+// final delivery message with the Delivery Drive Link (agents/delivery.js).
+app.post('/notion-delivery', async (req, res) => {
+  res.status(200).json({ received: true });
+
+  const payload = req.body;
+  const pageId = payload?.id || payload?.page_id || payload?.data?.page_id || payload?.data?.id;
+  if (!pageId) {
+    console.log('[DELIVERY] Delivery webhook — no page ID in payload, keys:', Object.keys(payload || {}).join(', '));
+    return;
+  }
+
+  let page;
+  try {
+    const notion = require('./utils/notion');
+    page = await notion.getPage(pageId);
+  } catch (err) {
+    console.error('[DELIVERY] Delivery webhook — failed to fetch page:', err.message);
+    return;
+  }
+
+  const status = page?.properties?.['Status']?.select?.name;
+  if (status !== 'Ready to Deliver') {
+    console.log(`[DELIVERY] Delivery webhook — status is "${status}", not Ready to Deliver, skipping`);
+    return;
+  }
+
+  delivery.handleDelivery(page).catch(err => {
+    console.error('[DELIVERY] Unhandled error in handleDelivery:', err.message);
   });
 });
 
@@ -405,6 +447,11 @@ cron.schedule('0 */6 * * *', async () => {
     await onboardingAgent.checkPendingOnboarding();
   } catch (err) {
     console.error('[SCHEDULER] checkPendingOnboarding failed:', err.message);
+  }
+  try {
+    await delivery.checkGrowthMidCycle();
+  } catch (err) {
+    console.error('[SCHEDULER] checkGrowthMidCycle failed:', err.message);
   }
 });
 

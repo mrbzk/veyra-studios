@@ -13,6 +13,11 @@
 //
 // billing_reason = subscription_cycle   (monthly renewal paid)
 //   → next cycle row in the Project Tracker + alert in #production.
+//
+// customer.subscription.updated / deleted
+//   → package switched: Plan Purchased updated, alert. Cancellation
+//     scheduled or withdrawn: alert. Subscription ended: Client DB Status →
+//     Cancelled, alert.
 
 const Stripe = require('stripe');
 const notion = require('../utils/notion');
@@ -258,4 +263,69 @@ async function handleInvoicePaid(invoice) {
   }
 }
 
-module.exports = { handleInvoicePaid };
+// ─── Plan changes and cancellations (customer.subscription.updated/deleted) ──
+
+async function packageOfSubscription(sub) {
+  for (const item of sub.items?.data || []) {
+    const p = item.price?.product || item.plan?.product;
+    const id = typeof p === 'string' ? p : p?.id;
+    if (!id) continue;
+    const product = await stripe().products.retrieve(id);
+    const pkg = packageFor(product.metadata?.plan);
+    if (pkg) return pkg;
+  }
+  return null;
+}
+
+const fmtDate = unix => new Date(unix * 1000).toISOString().split('T')[0];
+
+async function handleSubscriptionChange(event) {
+  const sub = event.data.object;
+  const prev = event.data.previous_attributes || {};
+  const isDeleted = event.type === 'customer.subscription.deleted';
+  const cancelChanged = 'cancel_at_period_end' in prev || 'cancel_at' in prev;
+  const itemsChanged = 'items' in prev;
+  if (!isDeleted && !cancelChanged && !itemsChanged) return; // status ticks, payment method etc.
+
+  let who = sub.customer;
+  try {
+    const pkg = await packageOfSubscription(sub);
+    if (!pkg) {
+      console.log(`[SUBSCRIPTION] ${event.type} for ${sub.id} is not a Launch/Core/Growth subscription, ignoring`);
+      return;
+    }
+    const customer = await stripe().customers.retrieve(sub.customer);
+    who = customer.name || customer.email || sub.customer;
+    const clientPage = await findClientByEmail(customer.email);
+    const clientName = clientPage ? titleOf(clientPage) : who;
+    const notionLink = clientPage ? `\n👉 Notion: ${clientPage.url}` : `\n⚠️ No Client DB row has the email ${customer.email}, so Notion was not updated.`;
+
+    if (isDeleted) {
+      if (clientPage) await notion.updatePage(clientPage.id, { 'Status': { select: { name: 'Cancelled' } } });
+      await alert(`❌ Subscription ended: ${clientName} (${pkg.label})\nNo more cycles will be created. Client DB Status set to Cancelled. Any open cycle stays in the Project Tracker.${notionLink}`);
+      return;
+    }
+
+    if (cancelChanged) {
+      const endsAt = sub.cancel_at || (sub.cancel_at_period_end ? sub.current_period_end || sub.items?.data?.[0]?.current_period_end : null);
+      if (sub.cancel_at_period_end || sub.cancel_at) {
+        await alert(`⏳ Cancellation scheduled: ${clientName} (${pkg.label})${endsAt ? `\nEnds on ${fmtDate(endsAt)}. No renewal cycle will be created after that.` : ''}${notionLink}`);
+      } else {
+        await alert(`↩️ Cancellation withdrawn: ${clientName} (${pkg.label}) will keep renewing.${notionLink}`);
+      }
+    }
+
+    if (itemsChanged && clientPage) {
+      const current = clientPage.properties?.['Plan Purchased']?.select?.name;
+      if (current !== pkg.label) {
+        await notion.updatePage(clientPage.id, { 'Plan Purchased': { select: { name: pkg.label } } });
+        await alert(`🔄 Plan changed: ${clientName} ${current || 'unknown'} → ${pkg.label}\nFrom the next renewal, cycles are created with ${pkg.totalVideos} videos. The current cycle is unchanged: edit its Total Videos by hand if it should change too.${notionLink}`);
+      }
+    }
+  } catch (err) {
+    console.error(`[SUBSCRIPTION] ${event.type} ${sub.id} failed: ${err.message}`);
+    await alert(`🚨 Could not process a subscription change for ${who} (${event.type})\nError: ${err.message}\nPlease check Stripe and update Notion manually.`);
+  }
+}
+
+module.exports = { handleInvoicePaid, handleSubscriptionChange };

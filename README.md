@@ -29,7 +29,8 @@ Reminders (day 1, 3, 7) ──► "book your kickoff call", until someone types 
    ▼  team updates Notion as production progresses
 Production agent ──► storyboard review ─► client replies "Approved"
                  ──► main video review ─► "Approved"
-                 ──► hooks review      ─► "Approved" ─► final delivery + trial follow-up
+                 ──► hooks review      ─► "Approved"
+Team sets Ready to Deliver ──► final delivery + follow-up
 ```
 
 ### 1. Payment → onboarding
@@ -61,25 +62,29 @@ Everything runs on Stripe's **`invoice.paid`** event, so nothing happens until t
 
 Code: `agents/subscriptions.js` and `utils/plans.js` (video counts and the wording of each package's monthly scope).
 
-**Not automated yet:** reviews for Launch, Core and Growth cycles (several concepts plus static ads). If a Notion automation fires for one of those rows, the production agent sends nothing to the client and asks the team in #production to handle it by hand.
+**Plan changes and cancellations** (Stripe `customer.subscription.updated` / `deleted`): switching package updates **Plan Purchased** (later cycles use the new video count) and posts `🔄 Plan changed`. Scheduling or withdrawing a cancellation posts `⏳` / `↩️`. When the subscription ends, the Client DB **Status** becomes `Cancelled` and #production gets `❌ Subscription ended`.
 
-### 4. Production
-Triggered by Notion automations on the Project Tracker:
+### 4. Each cycle: reviews and delivery
 
-| When this happens in Notion | The production agent |
-|---|---|
-| **Status** → `Storyboard Review` | Posts the **Storyboard Link** to the client, ticks **Storyboard Sent to Client** |
-| **Main Video Status** or **Hooks Status** → `Ready for Review` | Posts the matching Drive link to the client, sets the status to `In Review` |
-| Client types **"Approved"** (or "approuvé") in their channel (or clicks the storyboard button) | Advances the stage: storyboard → `In Production`; main video → Review Stage `Hooks`; hooks → sends the **Delivery Drive Link**, marks the cycle `Delivered` |
+The same routine for every cycle, trial or package. The team fills in a link and changes one field in the Project Tracker. The client replies **"Approved"** (or "approuvé") in their channel to move on. If they want changes, they say so in the channel; you revise and set the same field again.
 
-After delivery, the follow-up depends on **Client Type**:
-- **Trial**: "When you are ready to scale up…" to the client, plus a conversion alert in #production
-- **Recurring**: "When you are ready to kick off your next cycle…"
-- **One-off**: #production alert only
+| Stage | Team fills in | Then sets | Client gets |
+|---|---|---|---|
+| 1. Storyboard | **Storyboard Link** | **Status** → `Storyboard Review` | Storyboard review. On "Approved": Status → `In Production` |
+| 2. Main video(s) | **Main Video Drive Link** | **Main Video Status** → `Ready for Review` | Main video review (all concepts in one batch for packages). On "Approved": Review Stage → `Hooks` |
+| 3. Hooks (+ statics) | **Hooks Drive Link**, and for packages **Statics Drive Link** | **Hooks Status** → `Ready for Review` | Hooks review (packages: hooks and static ads together). On "Approved": "we're preparing your final files", Review Stage → `Complete`, #production told to prepare the folder |
+| 4. Delivery | **Delivery Drive Link** (the final folder) | **Status** → `Ready to Deliver` | Delivery message with the folder and what is in it. Status → `Delivered`. See below |
+
+After delivery:
+- **Trial**: "When you are ready to scale up…" to the client, `📊 Trial cycle delivered` in #production.
+- **Launch / Core / Growth**: the delivery message includes the booking link for the report and review call (`REVIEW_CALL_BOOKING_URL`), monthly for Launch and Core, every two weeks for Growth. `📦 Cycle delivered` in #production.
+- **Growth** also gets the call booking link on day 14 of each cycle that is not yet delivered (scheduler).
+
+Stages 1 to 3 are run by the production agent (`prompts/production.md`). Delivery and the Growth day-14 message are plain code (`agents/delivery.js`). Rows with an old plan's Total Videos (6, 11, 22, 5) are not handled: the agent flags them in #production.
+
+A client can have two cycles open at once (a renewal starts the next one). If a client writes "Approved" while more than one cycle is waiting for approval, nothing is updated and #production is asked to do it by hand.
 
 All client messages are in the client's **Language** (English, Nederlands or Français) and follow the Veyra brand voice: no em dashes, emoji or exclamation marks. Internal #production alerts are always in English.
-
-**French coverage:** FR templates exist for the whole Paid Trial journey (welcome, reminders, storyboard, main video, hooks, delivery, follow-ups). The older Spark/Scale/System/Story review templates are EN/NL only; if a French client hits one, the agent sends English and flags it in #production.
 
 ---
 
@@ -104,7 +109,8 @@ server.js               Express server: webhook endpoints, signature checks, 6-h
 agents/onboarding.js    Onboarding agent (Claude tool-use loop) + kickoff call reminders
 agents/production.js    Production agent (Claude tool-use loop)
 agents/booking.js       /booked Slack command
-agents/subscriptions.js Package upgrades, direct package purchases, renewals (invoice.paid)
+agents/subscriptions.js Package upgrades, direct purchases, renewals, plan changes, cancellations
+agents/delivery.js      Final delivery (Status → Ready to Deliver) + Growth day-14 review call
 prompts/onboarding.md   Onboarding agent instructions and EN/NL message templates
 prompts/production.md   Production agent instructions, review state machine and templates
 utils/plans.js          Package catalogue: video counts and monthly scope per language
@@ -125,9 +131,10 @@ Both agents use `claude-sonnet-4-6`. The model name appears in `agents/onboardin
 
 | Method | Path | Called by | Purpose |
 |---|---|---|---|
-| POST | `/stripe-webhook` | Stripe | `checkout.session.completed` (Paid Trial), `invoice.paid` (packages: upgrade, direct purchase, renewal) and the `customer.created` test lane |
+| POST | `/stripe-webhook` | Stripe | `checkout.session.completed` (Paid Trial), `invoice.paid` (packages: upgrade, direct purchase, renewal), `customer.subscription.updated` / `deleted` (plan change, cancellation) and the `customer.created` test lane |
 | POST | `/notion-storyboard` | Notion automation | Storyboard ready for the client |
 | POST | `/notion-video-review` | Notion automation | Main video or hooks ready for the client |
+| POST | `/notion-delivery` | Notion automation | Status → Ready to Deliver: final delivery |
 | POST | `/slack-events` | Slack Events API | Client replies containing "approved" |
 | POST | `/slack-interactive` | Slack interactivity | Storyboard approve button |
 | POST | `/slack-commands` | Slack slash commands | `/booked` (requires `SLACK_SIGNING_SECRET`) |
@@ -155,6 +162,7 @@ Set in `/var/www/veyra-agent/.env` on the VPS. See [env.example](env.example) fo
 | `SLACK_TEAM_MEMBER_IDS` | No | Extra member IDs to invite, comma-separated |
 | `INTERNAL_SLACK_CHANNEL` | No | Team alerts channel, default `production` |
 | `KICKOFF_BOOKING_URL` | No | Kickoff call booking page, default `https://veyrastudios.eu/onboarding` |
+| `REVIEW_CALL_BOOKING_URL` | No | Booking page for the report and review call, sent at delivery and on Growth day 14. Defaults to `KICKOFF_BOOKING_URL` |
 | `PORT` | No | Default `3000` (nginx proxies to it) |
 
 After changing `.env`: `pm2 restart veyra-agent --update-env`.
@@ -174,7 +182,7 @@ The Notion integration must be connected to both databases (database `···` �
 | Plan Purchased | Select | `Paid Trial`, `Launch`, `Core`, `Growth` (older rows may have Spark, Scale, System, Story) |
 | Language | **Select** | `English`, `Nederlands`, `Français` |
 | Slack Channel | Text | e.g. `#client-jane-doe`; `/booked` matches on this |
-| Status | Select | `Active` |
+| Status | Select | `Active`, `Cancelled` (set when the subscription ends) |
 | Client Type | Select | `Trial`, `Recurring`, `One-off`. Upgrades set `Recurring` |
 | Kickoff Call Booked | Checkbox | Ticked by `/booked`; stops the reminders |
 | Payment Date | Date | |
@@ -189,26 +197,27 @@ The Notion integration must be connected to both databases (database `···` �
 | Cycle Number | Number | |
 | Is First Cycle | Checkbox | |
 | Total Videos | Number | Identifies the plan: 4 Paid Trial, 8 Launch, 16 Core, 24 Growth (older: 6 Spark, 11 Scale, 22 System, 5 Story) |
-| Status | Select | `Briefing`, `Storyboard Review`, `In Production`, `Delivered` |
+| Status | Select | `Briefing`, `Storyboard Review`, `In Production`, `Ready to Deliver`, `Delivered` |
 | Review Stage | Select | `Main Video`, `Hooks`, `Complete` |
 | Start Date | Date | |
 | Storyboard Link | URL | Sent to the client for storyboard review |
 | Storyboard Sent to Client, Storyboard Approved | Checkbox | |
 | Storyboard Approved Date | Date | |
 | Main Video Status, Hooks Status | Select | `Not Started`, `Ready for Review`, `In Review`, `Approved` |
-| Main Video Drive Link, Hooks Drive Link, Delivery Drive Link | URL | |
+| Main Video Drive Link, Hooks Drive Link, Statics Drive Link, Delivery Drive Link | URL | Statics Drive Link: packages only |
 | Main Video Approved, Hooks Approved, Client Approved, Slack Notified | Checkbox | |
 | Main Video Approved Date, Hooks Approved Date, Delivered Date | Date | |
 
 **Automations** (Project Tracker → Automations, action **Send webhook**):
 - Status changes to `Storyboard Review` → `https://srv.veyrastudios.agency/notion-storyboard`
 - Main Video Status or Hooks Status changes to `Ready for Review` → `https://srv.veyrastudios.agency/notion-video-review`
+- Status changes to `Ready to Deliver` → `https://srv.veyrastudios.agency/notion-delivery`
 
 ---
 
 ## Stripe setup
 
-- **Webhook endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed`, `customer.created` and `invoice.paid`. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
+- **Webhook endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed`, `customer.created`, `invoice.paid`, `customer.subscription.updated` and `customer.subscription.deleted`. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
 - **Restricted key** for `STRIPE_SECRET_KEY`: Developers → API keys → Create restricted key, Customers **Read**, Products **Read**, nothing else.
 - **Package Products** (Launch, Core, Growth in EN/NL/FR) must keep their metadata `plan` and `language`. A subscription to a product without a known `plan` is ignored.
 - **Paid Trial EN** Payment Link metadata: `plan` = `trial`, `language` = `EN`
@@ -293,6 +302,7 @@ STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl https:/
 | `/booked failed because the app did not respond` | `SLACK_SIGNING_SECRET` missing or wrong, or the app wasn't restarted after changing `.env`. The log shows `Slash command signature verification failed` |
 | "No client in the Client DB has Slack Channel …" after `/booked` | Run it in the client's own channel, or fix **Slack Channel** on their Notion row |
 | "Manual Slack invite needed" in #production | Slack refused the guest invite; invite the client by hand as a single-channel guest |
+| Client didn't get the delivery after Ready to Deliver | Check the Notion automation for `/notion-delivery` exists, and look for `⚠️ … Delivery Drive Link is empty` in #production |
 | 🚨 "Subscription automation failed" in #production | Usually `STRIPE_SECRET_KEY` missing or without Products/Customers read access. The error text says why. Update Notion and Slack for that client by hand |
 | ⚠️ "renewal paid … but no Client DB row has that email" | The Stripe customer's email differs from the Client DB **Email**. Fix one of them, then create the cycle row by hand |
 | 🚨 "Onboarding agent failed" in #production | The agent stopped mid-way; the error text says why. Finish that client's setup by hand |

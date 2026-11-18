@@ -1,8 +1,8 @@
 'use strict';
 
 // Sends a synthetic, correctly-signed checkout.session.completed event to the
-// /stripe-webhook endpoint, mimicking a purchase through the Paid Trial EN or
-// Paid Trial NL Payment Link (metadata: plan=trial, language=en|nl), so
+// /stripe-webhook endpoint, mimicking a purchase through the Paid Trial EN, NL
+// or FR Payment Link (metadata: plan=trial, language=en|nl|fr), so
 // onboarding can be exercised without a real Stripe payment.
 //
 // Usage:
@@ -11,6 +11,7 @@
 // Example:
 //   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js en
 //   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl
+//   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js fr
 //   STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl http://localhost:3000/stripe-webhook
 
 const crypto = require('crypto');
@@ -30,14 +31,15 @@ if (!secret) {
   process.exit(1);
 }
 
-if (!['en', 'nl'].includes(language)) {
-  console.error(`Unknown language "${language}" — expected en or nl.`);
+if (!['en', 'nl', 'fr'].includes(language)) {
+  console.error(`Unknown language "${language}" — expected en, nl or fr.`);
   process.exit(1);
 }
 
 const TEST_IDENTITIES = {
   en: { name: 'Test Customer EN', email: 'test-en@example.com' },
   nl: { name: 'Test Klant NL', email: 'test-nl@example.com' },
+  fr: { name: 'Test Client FR', email: 'test-fr@example.com' },
 };
 const who = TEST_IDENTITIES[language];
 

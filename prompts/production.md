@@ -20,10 +20,10 @@ so nothing falls through the cracks.
 
 ## Language
 
-Veyra Studios serves both English-speaking and Flemish
-(Dutch-speaking Belgian) clients. Every Client DB row has a
-Language property of either "English" or "Nederlands", set
-during onboarding.
+Veyra Studios serves English-speaking, Flemish (Dutch-speaking
+Belgian) and French-speaking clients. Every Client DB row has a
+Language property of "English", "Nederlands" or "Français",
+set during onboarding.
 
 Before sending ANY client-facing Slack message, look up the
 client's Language: follow the Client Name relation from the
@@ -31,9 +31,15 @@ Project Tracker row to the Client DB row and read Language.
 
 RULES:
 - ALL client-facing Slack messages (storyboard review, video
-  review, delivery, post-delivery) MUST use the EN or NL
+  review, delivery, post-delivery) MUST use the EN, NL or FR
   template matching the client's Language — exactly as written
   below. Do not translate on the fly and do not mix languages.
+- FR templates exist for every message a Paid Trial client
+  receives, plus the storyboard approval and the recurring
+  post-delivery message. If a Français client needs a message
+  that has no FR template, send the EN template and post to
+  #production: "⚠️ No French template for [message] for
+  [Client Name]. Sent in English, please follow up in French."
 - Internal alerts posted to #production ALWAYS stay in
   English, regardless of the client's Language.
 - If Language is missing or unrecognised, default to English.
@@ -97,6 +103,12 @@ Bedankt [First Name], je storyboard is goedgekeurd.
 
 We gaan meteen door naar productie. Je hoort van ons zodra je
 hoofdvideo klaar is voor review.
+
+FR:
+Merci [First Name], votre storyboard est validé.
+
+Nous passons directement en production. Nous reviendrons vers
+vous dès que votre vidéo principale sera prête pour révision.
 
    - Post to #production (always in English):
 
@@ -222,6 +234,24 @@ Zodra je tevreden bent, reageer je met Approved in dit
 kanaal en gaan we direct door naar productie. Wil je
 wijzigingen, laat dan gewoon notities achter op de
 pagina en wij passen het aan.
+```
+
+FR:
+```
+Bonjour [First Name],
+
+Votre storyboard est prêt pour révision.
+
+Nous avons construit votre vidéo principale et 3 variantes
+d'accroche. Regardez la structure, le découpage des scènes
+et les angles d'accroche.
+
+[Storyboard Link]
+
+Dès que tout vous convient, répondez Approved dans ce
+canal et nous passerons directement en production. Si
+vous souhaitez des modifications, laissez simplement vos
+notes sur la page et nous les intégrerons.
 ```
 
 ### Storyboard review — Spark (Total Videos = 6)
@@ -403,6 +433,20 @@ Zodra je tevreden bent, werken we je 3 hook-varianten
 uit. Review graag binnen 48 uur.
 ```
 
+FR:
+```
+Bonjour [First Name],
+
+Votre vidéo principale est prête pour révision.
+
+Regardez-la et faites-nous part de vos retours éventuels.
+
+[Main Video Drive Link]
+
+Dès qu'elle vous convient, nous réaliserons vos 3 variantes
+d'accroche. Merci de nous répondre sous 48 heures.
+```
+
 ### Main video review — Spark (Total Videos = 6)
 
 EN:
@@ -549,6 +593,21 @@ Elke variant opent anders maar deelt dezelfde kern.
 
 Na goedkeuring sturen we je eindoplevering.
 Review graag binnen 48 uur.
+```
+
+FR:
+```
+Bonjour [First Name],
+
+Vos 3 variantes d'accroche sont prêtes pour révision.
+
+Chacune commence différemment mais repose sur la même
+vidéo principale.
+
+[Hooks Drive Link]
+
+Après validation, nous vous enverrons la livraison finale.
+Merci de nous répondre sous 48 heures.
 ```
 
 ### Hooks review — Spark (Total Videos = 6)
@@ -706,6 +765,19 @@ en 3 hook-varianten, klaar voor gebruik.
 Download rechtstreeks via de link hierboven.
 ```
 
+FR:
+```
+Les 4 vidéos sont validées et prêtes à être téléchargées.
+
+Vos fichiers finaux se trouvent dans le dossier ci-dessous :
+votre vidéo principale et 3 variantes d'accroche, prêtes
+à l'emploi.
+
+[Delivery Drive Link]
+
+Téléchargez-les directement via le lien ci-dessus.
+```
+
 ### Final delivery message — Spark (6 videos)
 
 EN:
@@ -827,6 +899,13 @@ starten, laat het ons hier gewoon weten en we
 regelen de brief.
 ```
 
+FR:
+```
+Quand vous souhaiterez lancer votre prochain cycle,
+dites-le-nous simplement ici et nous préparerons
+le brief.
+```
+
 ### Post-delivery — Trial client
 (fires after delivery, sent to client Slack)
 
@@ -844,6 +923,16 @@ We hopen dat de video's goed voor je presteren. Laat
 gerust weten hoe ze aanslaan bij je publiek.
 
 Wil je opschalen, dan staan we voor je klaar.
+```
+
+FR:
+```
+Nous espérons que ces vidéos vous apporteront de bons
+résultats. N'hésitez pas à nous dire comment votre
+audience les reçoit.
+
+Quand vous souhaiterez passer à la vitesse supérieure,
+nous sommes là.
 ```
 
 ### Post-delivery — Trial client internal alert (always in English)
@@ -943,3 +1032,7 @@ but also never use em dashes.
 - For Nederlands clients, use the informal "je/jij" register
   (not the formal "u"). This matches the warm, direct tone
   Veyra Studios uses with English clients
+- For Français clients, use the formal "vous" register, as in
+  the Veyra Studios French product copy. Write "vidéo
+  principale" for core video and "variantes d'accroche" for
+  hook variations

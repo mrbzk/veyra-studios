@@ -9,6 +9,7 @@ const { verifySlackSignature } = require('./utils/verify-slack');
 const onboardingAgent = require('./agents/onboarding');
 const productionAgent = require('./agents/production');
 const bookingAgent = require('./agents/booking');
+const subscriptions = require('./agents/subscriptions');
 
 const app = express();
 
@@ -45,13 +46,23 @@ app.post('/stripe-webhook', async (req, res) => {
   // Acknowledge immediately
   res.status(200).json({ received: true });
 
-  // Onboarding is triggered ONLY by the two Paid Trial Payment Links
+  // Monthly packages (Launch / Core / Growth): the first paid invoice of a
+  // subscription upgrades an existing client or onboards a new one, and every
+  // paid renewal creates the next cycle. See agents/subscriptions.js.
+  if (event.type === 'invoice.paid') {
+    subscriptions.handleInvoicePaid(event.data.object).catch(err => {
+      console.error('[SUBSCRIPTION] Unhandled error in handleInvoicePaid:', err.message);
+    });
+    return;
+  }
+
+  // Paid Trial onboarding is triggered ONLY by the two Paid Trial Payment Links
   // ("Paid Trial EN" / "Paid Trial NL" / "Paid Trial FR"). Each link
   // carries metadata:
   //   plan     = trial
   //   language = en | nl | fr
-  // Any other checkout (Spark/Scale/System/Story links, one-off invoices,
-  // etc.) is ignored here.
+  // Any other checkout is ignored here. Package checkouts (Launch / Core /
+  // Growth Payment Links) are handled through invoice.paid above.
   //
   // Manual test lane: a customer created by hand in the Stripe Dashboard
   // ("+ Add customer") with "test" in the description. Add "NL" or "FR" as
@@ -83,7 +94,7 @@ app.post('/stripe-webhook', async (req, res) => {
   const details = session.customer_details || {};
 
   if (!isPaidTrial(meta)) {
-    console.log('[ONBOARDING] Skipping checkout session — not a Paid Trial link:', details.email, `(metadata.plan: "${meta.plan || ''}")`);
+    console.log('[ONBOARDING] Checkout session is not a Paid Trial link, no action here:', details.email, `(metadata.plan: "${meta.plan || ''}"; packages are handled on invoice.paid)`);
     return;
   }
 

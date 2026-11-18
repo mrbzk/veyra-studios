@@ -111,8 +111,9 @@ At [api.slack.com/apps](https://api.slack.com/apps), create or open **Veyra Agen
 
 ## 7. Stripe
 
-1. **Developers → Webhooks → Add endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed` and `customer.created`. Copy the signing secret → `STRIPE_WEBHOOK_SECRET`.
+1. **Developers → Webhooks → Add endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed`, `customer.created` and `invoice.paid`. Copy the signing secret → `STRIPE_WEBHOOK_SECRET`.
 2. On the **Paid Trial EN** Payment Link, add metadata `plan` = `trial` and `language` = `EN`. On **Paid Trial NL**: `plan` = `trial`, `language` = `NL`. On **Paid Trial FR**: `plan` = `trial`, `language` = `FR`.
+3. **Developers → API keys → Create restricted key**, name `Veyra Agent`, permissions Customers **Read** and Products **Read**, everything else None. Copy it (`rk_live_…`) → `STRIPE_SECRET_KEY`.
 
 ## 8. Notion
 

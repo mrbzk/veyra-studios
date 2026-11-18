@@ -5,6 +5,7 @@ const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
 const notion = require('../utils/notion');
 const slack = require('../utils/slack');
+const { LANGUAGE_LABELS, packageFor } = require('../utils/plans');
 
 const _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60000 });
 
@@ -253,9 +254,6 @@ async function runAgent(userMessage) {
 // Where clients book their kickoff call (welcome message + reminders)
 const KICKOFF_BOOKING_URL = process.env.KICKOFF_BOOKING_URL || 'https://veyrastudios.eu/onboarding';
 
-// Language code ↔ the Client DB "Language" select option
-const LANGUAGE_LABELS = { en: 'English', nl: 'Nederlands', fr: 'Français' };
-
 async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en') {
   const languageLabel = LANGUAGE_LABELS[language] || 'English';
   console.log(`[ONBOARDING] Processing new customer: ${customer.name || customer.email} (${plan}, ${languageLabel})`);
@@ -268,6 +266,8 @@ async function handleNewCustomer(customer, plan = 'Paid Trial', language = 'en')
       '',
       `Plan: ${plan}`,
       `Language: ${languageLabel}`,
+      `Client Type: ${plan === 'Paid Trial' ? 'Trial' : 'Recurring'}`,
+      `Total Videos: ${plan === 'Paid Trial' ? 4 : (packageFor(plan)?.totalVideos ?? 'unknown, alert #production')}`,
       '',
       'Environment:',
       `NOTION_CLIENT_DB_ID: ${process.env.NOTION_CLIENT_DB_ID}`,
@@ -302,14 +302,15 @@ function getPageTitle(page) {
   return '';
 }
 
-// Reminds Paid Trial clients to book their kickoff call on day 1, 3 and 7
-// after payment, until "Kickoff Call Booked" is ticked on their Client DB row.
+// Reminds new clients (Paid Trial or a package bought directly) to book their
+// kickoff call on day 1, 3 and 7 after payment, until "Kickoff Call Booked" is
+// ticked on their Client DB row. Clients who upgrade from the trial keep
+// their original Payment Date, so they are past the window and not chased.
 async function checkPendingOnboarding() {
   console.log('[SCHEDULER] Checking for unbooked kickoff calls');
 
   const filter = {
     and: [
-      { property: 'Client Type', select: { equals: 'Trial' } },
       { property: 'Kickoff Call Booked', checkbox: { equals: false } },
       { property: 'Payment Date', date: { is_not_empty: true } },
     ],
@@ -336,6 +337,8 @@ async function checkPendingOnboarding() {
       const paymentDateStr = page.properties?.['Payment Date']?.date?.start;
       const languageName = page.properties?.['Language']?.select?.name;
       const language = Object.keys(LANGUAGE_LABELS).find(code => LANGUAGE_LABELS[code] === languageName) || 'en';
+      const planName = page.properties?.['Plan Purchased']?.select?.name || 'Paid Trial';
+      const pkg = packageFor(planName);
 
       if (!paymentDateStr) continue;
 
@@ -371,17 +374,17 @@ async function checkPendingOnboarding() {
         en: {
           1: `Hi ${firstName},\n\nA quick reminder to book your kickoff call when you have a moment. It's the last step before we can start on your project.\n\n${url}\n\nLooking forward to speaking with you.`,
           3: `Hi ${firstName},\n\nWe noticed your kickoff call isn't booked yet. We can't begin production until we've walked through your brief together, so whenever you have a moment it would be great to get it in the diary.\n\n${url}\n\nIf none of the times work for you, just reply here and we'll find one that does.`,
-          7: `Hi ${firstName},\n\nThis is our final reminder to book your kickoff call. Your project start date is being held until we've spoken.\n\n${url}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your Paid Trial.`,
+          7: `Hi ${firstName},\n\nThis is our final reminder to book your kickoff call. Your project start date is being held until we've spoken.\n\n${url}\n\nIf something has come up or you would like to discuss your project, please reply here or email us directly. We want to make sure you get the most out of your ${pkg ? `${pkg.label} package` : 'Paid Trial'}.`,
         },
         nl: {
           1: `Hoi ${firstName},\n\nEen korte herinnering om je kickoffgesprek in te plannen wanneer het je uitkomt. Het is de laatste stap voor we met je project kunnen starten.\n\n${url}\n\nWe kijken ernaar uit om je te spreken.`,
           3: `Hoi ${firstName},\n\nWe zien dat je kickoffgesprek nog niet is ingepland. We kunnen pas starten met de productie zodra we je brief samen hebben doorgenomen, dus als je even tijd hebt zou het top zijn om dit in te plannen.\n\n${url}\n\nPast geen enkel moment? Laat het hier gewoon weten en we zoeken samen een tijdstip dat wel lukt.`,
-          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering om je kickoffgesprek in te plannen. De startdatum van je project staat on hold tot we elkaar gesproken hebben.\n\n${url}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je proefpakket haalt.`,
+          7: `Hoi ${firstName},\n\nDit is onze laatste herinnering om je kickoffgesprek in te plannen. De startdatum van je project staat on hold tot we elkaar gesproken hebben.\n\n${url}\n\nAls er iets is tussengekomen of je wil je project bespreken, reageer dan hier of mail ons rechtstreeks. We willen dat je het maximum uit je ${pkg ? `${pkg.label}-pakket` : 'proefpakket'} haalt.`,
         },
         fr: {
           1: `Bonjour ${firstName},\n\nUn petit rappel pour réserver votre appel de lancement dès que vous avez un moment. C'est la dernière étape avant que nous puissions commencer votre projet.\n\n${url}\n\nAu plaisir d'échanger avec vous.`,
           3: `Bonjour ${firstName},\n\nNous constatons que votre appel de lancement n'est pas encore réservé. Nous ne pouvons pas démarrer la production avant d'avoir parcouru votre brief ensemble, alors dès que vous avez un moment, ce serait idéal de le planifier.\n\n${url}\n\nSi aucun créneau ne vous convient, répondez simplement ici et nous en trouverons un qui vous arrange.`,
-          7: `Bonjour ${firstName},\n\nCeci est notre dernier rappel pour réserver votre appel de lancement. La date de démarrage de votre projet est en attente jusqu'à notre échange.\n\n${url}\n\nSi un imprévu est survenu ou si vous souhaitez discuter de votre projet, répondez ici ou écrivez-nous directement par e-mail. Nous voulons que vous tiriez le meilleur parti de votre essai payant.`,
+          7: `Bonjour ${firstName},\n\nCeci est notre dernier rappel pour réserver votre appel de lancement. La date de démarrage de votre projet est en attente jusqu'à notre échange.\n\n${url}\n\nSi un imprévu est survenu ou si vous souhaitez discuter de votre projet, répondez ici ou écrivez-nous directement par e-mail. Nous voulons que vous tiriez le meilleur parti de votre ${pkg ? `forfait ${pkg.label}` : 'essai payant'}.`,
         },
       };
       const message = CHASE_MESSAGES[language][dayBucket];

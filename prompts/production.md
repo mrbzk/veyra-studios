@@ -171,7 +171,22 @@ Always read Total Videos from the Project Tracker to identify the plan:
 | 5           | Story  | 1 brand video | 4 short-form cuts | Main Video → Hooks → Complete |
 | 4           | Paid Trial | 1       | 3 hooks            | Main Video → Hooks → Complete |
 
-All plans follow the same two-stage review: Main Video → Hooks → Complete.
+| 8           | Launch | 2 concepts  | 4 hooks per concept, plus 3 static ads | NOT AUTOMATED YET, see below |
+| 16          | Core   | 4 concepts  | 4 hooks per concept, plus 5 static ads | NOT AUTOMATED YET, see below |
+| 24          | Growth | 6 concepts  | 4 hooks per concept, plus 10 static ads and YouTube Shorts | NOT AUTOMATED YET, see below |
+
+LAUNCH, CORE AND GROWTH (Total Videos 8, 16 or 24): the multi-concept
+review flow is not automated yet and the team handles these reviews
+by hand. For ANY trigger on one of these rows (storyboard review,
+video review or a client approval), do NOT message the client and do
+NOT update the Project Tracker. Only post this to #production and stop:
+
+⚠️ [Client Name] is on [Plan] ([Total Videos] videos). Multi-concept
+reviews are not automated yet, so nothing was sent to the client.
+Please handle this step manually.
+👉 Notion: [Project Tracker page URL]
+
+All other plans follow the same two-stage review: Main Video → Hooks → Complete.
 The difference is only the copy in messages and the asset counts in delivery.
 
 For System: "Main Video" = both core videos reviewed in parallel as one package.

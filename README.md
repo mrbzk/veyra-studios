@@ -4,6 +4,7 @@ Node.js server that runs two Claude-powered agents for Veyra Studios:
 
 - **Onboarding agent**: turns a Paid Trial payment into a ready-to-go client: Slack channel, welcome message, Notion records and an alert for the team. Then it chases the kickoff call booking.
 - **Production agent**: sends storyboard and video reviews to the client in Slack, handles their approvals, and delivers the final files.
+- **Subscriptions** (plain code): when a Launch, Core or Growth subscription is paid, upgrades the trial client or onboards a new one, and creates a new cycle on every monthly renewal.
 
 **Live at:** `https://srv.veyrastudios.agency` (Hostinger VPS, run with pm2)
 
@@ -37,10 +38,32 @@ Production agent ──► storyboard review ─► client replies "Approved"
 - There is **no onboarding form**. The welcome message asks the client to book their kickoff call at `KICKOFF_BOOKING_URL`.
 
 ### 2. Kickoff call reminders
-- Every 6 hours the server checks the Client DB for Trial clients whose **Kickoff Call Booked** is unticked, and posts a reminder in their channel on day 1, 3 and 7 after payment (EN, NL or FR). This runs in code, not through the AI.
+- Every 6 hours the server checks the Client DB for clients (trial or package) whose **Kickoff Call Booked** is unticked, and posts a reminder in their channel on day 1, 3 and 7 after payment (EN, NL or FR). This runs in code, not through the AI.
 - When the client has booked, someone on the team types **`/booked`** in the client's channel. That ticks the box and the reminders stop. See [Slack commands](#slack-commands).
 
-### 3. Production
+### 3. Upgrade to a monthly package
+
+The packages are Stripe Products with metadata `plan` (`launch`, `core`, `growth`) and `language` (`EN`, `NL`, `FR`):
+
+| Plan | Videos per month | Also |
+|---|---|---|
+| Launch | 8 (2 concepts × 4 hooks) | 3 static ads |
+| Core | 16 (4 concepts × 4 hooks) | 5 static ads with copy variants |
+| Growth | 24 (6 concepts × 4 hooks) | 10 static ads, YouTube Shorts |
+
+Everything runs on Stripe's **`invoice.paid`** event, so nothing happens until the client has paid. The client is matched to the Client DB by **email**, so the Stripe customer's email must be the same as on their Notion row.
+
+| What happened in Stripe | What the server does |
+|---|---|
+| A subscription is added to an existing client (e.g. a trial client, via the Stripe dashboard) and its first invoice is paid | Client DB: **Plan Purchased** → the package, **Client Type** → `Recurring`. Project Tracker: next cycle row (`<Name> — Cycle 2`, Status `Briefing`, Total Videos 8/16/24). Confirmation in the client's channel (in their Language), `🚀 Trial converted` in #production. No call, no reminders |
+| Someone with no Client DB row buys a package through a package Payment Link | Full onboarding, as for the Paid Trial but for the package: Slack channel, package welcome message with the kickoff booking link, Client DB (`Recurring`), Cycle 1 with the right Total Videos, day 1/3/7 reminders until `/booked` |
+| A monthly renewal invoice is paid | Next cycle row in the Project Tracker, `🔁 New monthly cycle` in #production. Nothing is sent to the client |
+
+Code: `agents/subscriptions.js` and `utils/plans.js` (video counts and the wording of each package's monthly scope).
+
+**Not automated yet:** reviews for Launch, Core and Growth cycles (several concepts plus static ads). If a Notion automation fires for one of those rows, the production agent sends nothing to the client and asks the team in #production to handle it by hand.
+
+### 4. Production
 Triggered by Notion automations on the Project Tracker:
 
 | When this happens in Notion | The production agent |
@@ -81,8 +104,10 @@ server.js               Express server: webhook endpoints, signature checks, 6-h
 agents/onboarding.js    Onboarding agent (Claude tool-use loop) + kickoff call reminders
 agents/production.js    Production agent (Claude tool-use loop)
 agents/booking.js       /booked Slack command
+agents/subscriptions.js Package upgrades, direct package purchases, renewals (invoice.paid)
 prompts/onboarding.md   Onboarding agent instructions and EN/NL message templates
 prompts/production.md   Production agent instructions, review state machine and templates
+utils/plans.js          Package catalogue: video counts and monthly scope per language
 utils/notion.js         Notion API helpers
 utils/slack.js          Slack API helpers (channels, invites, messages)
 utils/verify-stripe.js  Stripe webhook signature check
@@ -100,7 +125,7 @@ Both agents use `claude-sonnet-4-6`. The model name appears in `agents/onboardin
 
 | Method | Path | Called by | Purpose |
 |---|---|---|---|
-| POST | `/stripe-webhook` | Stripe | `checkout.session.completed` (Paid Trial) and the `customer.created` test lane |
+| POST | `/stripe-webhook` | Stripe | `checkout.session.completed` (Paid Trial), `invoice.paid` (packages: upgrade, direct purchase, renewal) and the `customer.created` test lane |
 | POST | `/notion-storyboard` | Notion automation | Storyboard ready for the client |
 | POST | `/notion-video-review` | Notion automation | Main video or hooks ready for the client |
 | POST | `/slack-events` | Slack Events API | Client replies containing "approved" |
@@ -120,6 +145,7 @@ Set in `/var/www/veyra-agent/.env` on the VPS. See [env.example](env.example) fo
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Yes | Claude API key |
 | `STRIPE_WEBHOOK_SECRET` | Yes | Signing secret of the Stripe webhook endpoint (`whsec_…`) |
+| `STRIPE_SECRET_KEY` | Yes, for packages | Restricted read-only key (`rk_live_…`): Customers Read, Products Read. Without it, package payments post a 🚨 alert in #production instead of being processed |
 | `NOTION_API_KEY` | Yes | Notion integration token |
 | `NOTION_CLIENT_DB_ID` | Yes | `36d8e2ee-ae0c-8028-a00b-f15951998479` |
 | `NOTION_PROJECT_TRACKER_ID` | Yes | `36d8e2ee-ae0c-80f4-9158-fffc22de55e2` |
@@ -145,11 +171,11 @@ The Notion integration must be connected to both databases (database `···` �
 |---|---|---|
 | Your Name | Title | |
 | Email | Email | |
-| Plan Purchased | Select | `Paid Trial` (older rows may have Spark, Scale, System, Story) |
+| Plan Purchased | Select | `Paid Trial`, `Launch`, `Core`, `Growth` (older rows may have Spark, Scale, System, Story) |
 | Language | **Select** | `English`, `Nederlands`, `Français` |
 | Slack Channel | Text | e.g. `#client-jane-doe`; `/booked` matches on this |
 | Status | Select | `Active` |
-| Client Type | Select | `Trial`, `Recurring`, `One-off`. Reminders only go to `Trial` |
+| Client Type | Select | `Trial`, `Recurring`, `One-off`. Upgrades set `Recurring` |
 | Kickoff Call Booked | Checkbox | Ticked by `/booked`; stops the reminders |
 | Payment Date | Date | |
 | Onboarding Date | Date | |
@@ -162,7 +188,7 @@ The Notion integration must be connected to both databases (database `···` �
 | Client Name | Relation | → Client DB |
 | Cycle Number | Number | |
 | Is First Cycle | Checkbox | |
-| Total Videos | Number | Identifies the plan: 4 Paid Trial, 6 Spark, 11 Scale, 22 System, 5 Story |
+| Total Videos | Number | Identifies the plan: 4 Paid Trial, 8 Launch, 16 Core, 24 Growth (older: 6 Spark, 11 Scale, 22 System, 5 Story) |
 | Status | Select | `Briefing`, `Storyboard Review`, `In Production`, `Delivered` |
 | Review Stage | Select | `Main Video`, `Hooks`, `Complete` |
 | Start Date | Date | |
@@ -182,7 +208,9 @@ The Notion integration must be connected to both databases (database `···` �
 
 ## Stripe setup
 
-- **Webhook endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed` and `customer.created`. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
+- **Webhook endpoint:** `https://srv.veyrastudios.agency/stripe-webhook`, events `checkout.session.completed`, `customer.created` and `invoice.paid`. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
+- **Restricted key** for `STRIPE_SECRET_KEY`: Developers → API keys → Create restricted key, Customers **Read**, Products **Read**, nothing else.
+- **Package Products** (Launch, Core, Growth in EN/NL/FR) must keep their metadata `plan` and `language`. A subscription to a product without a known `plan` is ignored.
 - **Paid Trial EN** Payment Link metadata: `plan` = `trial`, `language` = `EN`
 - **Paid Trial NL** Payment Link metadata: `plan` = `trial`, `language` = `NL`
 - **Paid Trial FR** Payment Link metadata: `plan` = `trial`, `language` = `FR`
@@ -265,4 +293,6 @@ STRIPE_WEBHOOK_SECRET=whsec_... node scripts/test-checkout-webhook.js nl https:/
 | `/booked failed because the app did not respond` | `SLACK_SIGNING_SECRET` missing or wrong, or the app wasn't restarted after changing `.env`. The log shows `Slash command signature verification failed` |
 | "No client in the Client DB has Slack Channel …" after `/booked` | Run it in the client's own channel, or fix **Slack Channel** on their Notion row |
 | "Manual Slack invite needed" in #production | Slack refused the guest invite; invite the client by hand as a single-channel guest |
+| 🚨 "Subscription automation failed" in #production | Usually `STRIPE_SECRET_KEY` missing or without Products/Customers read access. The error text says why. Update Notion and Slack for that client by hand |
+| ⚠️ "renewal paid … but no Client DB row has that email" | The Stripe customer's email differs from the Client DB **Email**. Fix one of them, then create the cycle row by hand |
 | 🚨 "Onboarding agent failed" in #production | The agent stopped mid-way; the error text says why. Finish that client's setup by hand |
